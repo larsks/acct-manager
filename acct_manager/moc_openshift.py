@@ -19,12 +19,14 @@ role_map = {
 
 
 def sanitize_project_name(name):
+    """Make a project name match kubernetes naming requirements"""
     name = re.sub(r"[^\w]+", "-", name, flags=re.ASCII).lower()
     name = name.strip("-")
     return name
 
 
 def check_role_name(name):
+    """Check that the given role name is valid"""
     if name not in role_map:
         raise exc.InvalidRoleNameError(f"invalid role name: {name}")
 
@@ -42,6 +44,7 @@ def check_if_safe(obj):
 
 
 def make_group_name(project, role):
+    """Create a group name for the given project and role"""
     return f"{project}-{role}"
 
 
@@ -55,6 +58,7 @@ def add_common_labels(obj, project_name):
 
 # pylint: disable=too-many-public-methods
 class MocOpenShift:
+    """Backend API for the account management microservice"""
 
     # This list of tuples is used by setup_resource_apis to initialize our API
     # endpoints.
@@ -343,12 +347,21 @@ class MocOpenShift:
         return group
 
     def get_identity(self, name):
+        """Return an Identity for the given user.
+
+        Raises a NotFoundError if the identity does not exist.
+        """
         ident_name = self.qualify_user_name(name)
         res = self.resources.identities.get(name=ident_name)
         ident = models.Identity.from_api(res)
         return ident
 
     def create_identity(self, name):
+        """Create a new identity for the given user.
+
+        This creates an identity named {identity_provider}:{name} by
+        calling self.qualify_name.
+        """
         self.logger.info("create identity for %s", name)
         ident_name = self.qualify_user_name(name)
         ident = models.Identity(
@@ -360,6 +373,7 @@ class MocOpenShift:
         return ident
 
     def identity_exists(self, name):
+        """Return True if the given identity exists, False otherwise"""
         try:
             self.get_identity(name)
         except NotFoundError:
@@ -368,12 +382,14 @@ class MocOpenShift:
             return True
 
     def delete_identity(self, name):
+        """Delete identity for the given user"""
         self.logger.info("delete identity for %s", name)
         id_name = self.qualify_user_name(name)
         if self.identity_exists(name):
             self.resources.identities.delete(name=id_name)
 
     def create_user_identity_mapping(self, name):
+        """Create a new UserIdentityMapping for the given user"""
         self.logger.info("create identity mapping for %s", name)
         ident_name = self.qualify_user_name(name)
         mapping = models.UserIdentityMapping(

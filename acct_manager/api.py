@@ -1,3 +1,5 @@
+"""Implements the microservice REST API"""
+
 import functools
 import os
 
@@ -24,6 +26,10 @@ auth = flask_httpauth.HTTPBasicAuth()
 
 
 def load_config():
+    """Attempt to load the kubernetes config.
+
+    First attempt to load the incluster configuration, and if that fails, try
+    to load from the a kubeconfig file."""
     try:
         kubernetes.config.load_incluster_config()
     except kubernetes.config.ConfigException:
@@ -31,12 +37,21 @@ def load_config():
 
 
 def get_openshift_client():
+    """Create and return an OpenShift API client"""
     load_config()
     k8s_client = kubernetes.client.api_client.ApiClient()
     return openshift.dynamic.DynamicClient(k8s_client)
 
 
 def wrap_response(func):
+    """Convert returned models to dictionaries.
+
+    If an api functions returns something (such as an object from
+    acct_manager.models) with a 'dict', call that to transform the object into
+    a dictionary. Returning a dictionary will cause Flask to return a
+    JSON response.
+    """
+
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         res = func(*args, **kwargs)
@@ -55,6 +70,8 @@ def wrap_response(func):
 
 
 def handle_exceptions(func):
+    """Transform exceptions into HTTP error messages"""
+
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         try:
@@ -104,16 +121,28 @@ def handle_exceptions(func):
 
 @auth.verify_password
 def verify_password(username, password):
+    """Validate user credentials.
+
+    Return True when the request provides the appropriate username and password, or if
+    AUTH_DISABLED is True. Return False otherwise.
+    """
+
     return AUTH_DISABLED or (username == ADMIN_USERNAME and password == ADMIN_PASSWORD)
 
 
 def create_app():
+    """Create Flask application instance"""
     app = flask.Flask(__name__)
     openshift_client = get_openshift_client()
     moc = moc_openshift.MocOpenShift(openshift_client, IDENTITY_PROVIDER, app.logger)
 
     @app.route("/healthz", methods=GET)
     def healthcheck():
+        """Healthcheck endpoint for asserting that service is running.
+
+        Unlike all other methods, requests to this endpoint do not require
+        authentication.
+        """
         return "OK"
 
     @app.route("/users", methods=POST)

@@ -6,22 +6,28 @@ from openshift.dynamic.exceptions import NotFoundError, ConflictError  # noqa
 
 
 class AccountManagerError(Exception):
+    """Base class for all exceptions defined by this package"""
+
     def __init__(self, *args, obj=None):
         self.obj = obj
         super().__init__(*args)
 
 
 class InvalidProjectError(AccountManagerError):
-    pass
+    """Raised on attempts to modify an invalid resource.
+
+    This generally means attempts to delete a project or group that we
+    didn't create.
+    """
 
 
 class ProjectExistsError(AccountManagerError):
-    pass
+    """Raised when attempting to create a new project with a conflicting name"""
 
 
 class GroupExistsError(AccountManagerError):
-    pass
+    """Raised when attempting to create a new group with a conflicting name"""
 
 
 class InvalidRoleNameError(AccountManagerError):
-    pass
+    """Raised when an invalid role name is used in a request"""
