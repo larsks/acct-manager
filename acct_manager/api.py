@@ -1,0 +1,212 @@
+import functools
+import os
+
+import flask
+import flask_httpauth
+import kubernetes
+import openshift.dynamic
+
+from . import moc_openshift
+from . import models
+from . import exc
+
+GET = ["GET"]
+POST = ["POST"]
+DELETE = ["DELETE"]
+PUT = ["PUT"]
+
+ADMIN_USERNAME = os.environ.get("ACCT_MGR_ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.environ["ACCT_MGR_ADMIN_PASSWORD"]
+IDENTITY_PROVIDER = os.environ["ACCT_MGR_IDENTITY_PROVIDER"]
+AUTH_DISABLED = os.environ.get("ACCT_MGR_AUTH_DISABLED", "false").lower() == "true"
+
+auth = flask_httpauth.HTTPBasicAuth()
+
+
+def load_config():
+    try:
+        kubernetes.config.load_incluster_config()
+    except kubernetes.config.ConfigException:
+        kubernetes.config.load_kube_config()
+
+
+def get_openshift_client():
+    load_config()
+    k8s_client = kubernetes.client.api_client.ApiClient()
+    return openshift.dynamic.DynamicClient(k8s_client)
+
+
+def wrap_response(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        res = func(*args, **kwargs)
+
+        if hasattr(res, "dict"):
+            message = models.Response(
+                error=False,
+                object=res,
+            )
+
+            return message.dict(exclude_none=True)
+
+        return res
+
+    return wrapper
+
+
+def handle_exceptions(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except moc_openshift.NotFoundError:
+            message = models.Response(error=True, message="object not found")
+            return flask.Response(
+                message.json(exclude_none=True), status=404, mimetype="application/json"
+            )
+        except exc.InvalidProjectError as err:
+            # If the client attempts to operate on an invalid object (that is,
+            # one without the required label), log a message but otherwise
+            # treat it as a 404 error.
+            flask.current_app.logger.warning(
+                "attempt to operate on invalid object: %s", err.obj
+            )
+            message = models.Response(error=True, message="invalid project")
+            return flask.Response(
+                message.json(exclude_none=True), status=400, mimetype="application/json"
+            )
+        except exc.ConflictError:
+            message = models.Response(error=True, message="object already exists")
+            return flask.Response(
+                message.json(exclude_none=True), status=409, mimetype="application/json"
+            )
+        except exc.AccountManagerError as err:
+            flask.current_app.logger.warning("account manager errror: %s", err)
+            message = models.Response(
+                error=True,
+                message=f"account manager API error: {err}",
+            )
+            return flask.Response(
+                message.json(exclude_none=True), status=400, mimetype="application/json"
+            )
+        except exc.ApiException as err:
+            flask.current_app.logger.error("kubernetes api error: %s", err)
+            message = models.Response(
+                error=True,
+                message="Unexpected kubernetes API error",
+            )
+            return flask.Response(
+                message.json(exclude_none=True), status=400, mimetype="application/json"
+            )
+
+    return wrapper
+
+
+@auth.verify_password
+def verify_password(username, password):
+    return AUTH_DISABLED or (username == "admin" and password == ADMIN_PASSWORD)
+
+
+def create_app():
+    app = flask.Flask(__name__)
+    openshift_client = get_openshift_client()
+    moc = moc_openshift.MocOpenShift(openshift_client, IDENTITY_PROVIDER, app.logger)
+
+    @app.route("/healthz", methods=GET)
+    def healthcheck():
+        return "OK"
+
+    @app.route("/users", methods=POST)
+    @auth.login_required
+    @handle_exceptions
+    @wrap_response
+    def create_user():
+        req = moc_openshift.models.UserRequest(**flask.request.json)
+        user = moc.create_user_bundle(req.name, req.fullName)
+        return user
+
+    @app.route("/users/<name>", methods=GET)
+    @auth.login_required
+    @handle_exceptions
+    @wrap_response
+    def get_user(name):
+        user = moc.get_user(name)
+        return user
+
+    @app.route("/users/<name>", methods=DELETE)
+    @auth.login_required
+    @handle_exceptions
+    @wrap_response
+    def delete_user(name):
+        moc.delete_user_bundle(name)
+        return models.Response(
+            error=False,
+            message=f"deleted user {name}",
+        )
+
+    @app.route("/projects", methods=POST)
+    @auth.login_required
+    @handle_exceptions
+    @wrap_response
+    def create_project():
+        req = moc_openshift.models.ProjectRequest(**flask.request.json)
+        project = moc.create_project_bundle(
+            req.name,
+            req.requester,
+            display_name=req.display_name,
+            description=req.description,
+        )
+        return project
+
+    @app.route("/projects/<name>", methods=GET)
+    @auth.login_required
+    @handle_exceptions
+    @wrap_response
+    def get_project(name):
+        project = moc.get_project(name)
+        return project
+
+    @app.route("/projects/<name>", methods=DELETE)
+    @auth.login_required
+    @handle_exceptions
+    @wrap_response
+    def delete_project(name):
+        moc.delete_project_bundle(name)
+        return models.Response(
+            error=False,
+            message=f"deleted proejct {name}",
+        )
+
+    @app.route(
+        "/users/<user_name>/projects/<project_name>/roles/<role_name>", methods=GET
+    )
+    @auth.login_required
+    @handle_exceptions
+    @wrap_response
+    def get_user_role(user_name, project_name, role_name):
+        res = moc.user_has_role(user_name, project_name, role_name)
+        return models.HasRoleResult(
+            user=user_name, project=project_name, role=role_name, has_role=res
+        )
+
+    @app.route(
+        "/users/<user_name>/projects/<project_name>/roles/<role_name>", methods=PUT
+    )
+    @auth.login_required
+    @handle_exceptions
+    @wrap_response
+    def add_user_role(user_name, project_name, role_name):
+        group = moc.add_user_to_role(user_name, project_name, role_name)
+        return group
+
+    @app.route(
+        "/users/<user_name>/projects/<project_name>/roles/<role_name>", methods=DELETE
+    )
+    @auth.login_required
+    @handle_exceptions
+    @wrap_response
+    def delete_user_role(user_name, project_name, role_name):
+        group = moc.remove_user_from_role(user_name, project_name, role_name)
+        return group
+
+    return app
