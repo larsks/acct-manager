@@ -104,7 +104,7 @@ def handle_exceptions(func):
 
 @auth.verify_password
 def verify_password(username, password):
-    return AUTH_DISABLED or (username == "admin" and password == ADMIN_PASSWORD)
+    return AUTH_DISABLED or (username == ADMIN_USERNAME and password == ADMIN_PASSWORD)
 
 
 def create_app():
