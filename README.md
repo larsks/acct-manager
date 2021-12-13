@@ -72,12 +72,24 @@ This uses the container image published at
 `quay.io/larsks/moc-onboarding-api:latest`, which is rebuilt
 automatically when commits are pushed to this repository.
 
-## Unit tests
+## Running the unit tests
 
 You can run the unit tests with `pytest`:
 
 ```
 pytest tests/unit
+```
+
+## Running the functional tests
+
+The functional tests interact with a live version of the API. Start
+the API service as described above, then set the
+`ACCT_MGR_API_ENDPOINT` environment variable to the URL of the
+service.
+
+```
+$ export ACCT_MGR_API_ENDPOINT=http://localhost:8080
+$ pytest tests/functional
 ```
 
 ## Examples
