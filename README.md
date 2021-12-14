@@ -1,10 +1,14 @@
 # MOC Account Management Microservice
 
-## Running the code locally
+## Running the code
 
  In the following instructions I'm assuming you're using [Code Ready
  Containers][crc]; if not, you may need to change the name of the
  identity provider.
+
+### Running the code locally
+
+This is generally the best option during development.
 
 1. Make sure you're authenticated to your development OpenShift
    environment (with appropriate privileges for manipulating users,
@@ -45,7 +49,26 @@
     gunicorn -b 127.0.0.1:8080 acct_manager.wsgi:app --log-file=-
     ```
 
-## Running the code in OpenShift
+### Running the code in a container
+
+This repository is published as a container image at
+`quay.io/larsks/moc-acct-manager:latest`, which is rebuilt
+automatically when commits are pushed to this repository. You can run
+the service with podman by doing something like this:
+
+```
+podman run --rm -p 8080:8080 \
+  -v $HOME/.kube:/root/.kube \
+  -v $PWD/manifests/base/quotas.json:/data/quotas.json \
+  --env-file .env \
+  -e ACCT_MGR_QUOTA_FILE=/data/quotas.json \
+  quay.io/larsks/moc-acct-manager:latest
+```
+
+As above, this requires you to be authenticated against OpenShift
+because it uses your `~/.kube/config` file for credentials.
+
+### Running the code in OpenShift
 
 There are examples Kubernetes manifests in the `manifests` directory
 that are designed to be applied using [Kustomize][]. To deploy this
@@ -68,9 +91,7 @@ That will deploy the following resources:
 - A ClusterRoleBinding granting the `onboarding` ServiceAccount
   `cluster-admin` privileges
 
-This uses the container image published at
-`quay.io/larsks/moc-onboarding-api:latest`, which is rebuilt
-automatically when commits are pushed to this repository.
+This uses the container image published at `quay.io/larsks/moc-acct-manager:latest`.
 
 ## Running the unit tests
 
