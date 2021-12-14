@@ -10,3 +10,8 @@ resources:
 - serviceaccount.yaml
 - service.yaml
 - route.yaml
+
+configMapGenerator:
+- name: onboarding-quotas
+  files:
+    - quotas.json
