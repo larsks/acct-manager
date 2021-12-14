@@ -7,6 +7,8 @@ import dotenv
 import pytest
 import requests
 
+from acct_manager import models
+
 dotenv.load_dotenv()
 
 
@@ -33,7 +35,8 @@ def session():
 
 @pytest.fixture
 def a_user(session):
-    res = session.post("/users", json={"name": "test-user", "fullName": "Test User"})
+    req = models.UserRequest(name="test-user", fullName="Test User")
+    res = session.post("/users", json=req.dict(exclude_none=True))
     assert res.status_code == 200
     yield res
     res = session.delete("/users/test-user")
@@ -44,8 +47,10 @@ def a_user(session):
 
 @pytest.fixture
 def a_project(session):
+    req = models.ProjectRequest(name="test-project", requester="test-user")
     res = session.post(
-        "/projects", json={"name": "test-project", "requester": "test_user"}
+        "/projects",
+        json=req.dict(exclude_none=True),
     )
     assert res.status_code == 200
     yield res
@@ -71,6 +76,16 @@ def test_user(session, a_user):
     assert data["object"]["metadata"]["name"] == "test-user"
 
 
+def test_user_not_found(session):
+    res = session.get("/users/missing-user")
+    assert res.status_code == 404
+
+
+def test_user_invalid(session):
+    res = session.post("/users", json={})
+    assert res.status_code == 400
+
+
 def test_project(session, a_project):
     res = session.get("/projects/test-project")
     assert res.status_code == 200
@@ -78,27 +93,44 @@ def test_project(session, a_project):
     assert data["object"]["metadata"]["name"] == "test-project"
 
 
+def test_project_not_found(session):
+    res = session.get("/projects/missing-project")
+    assert res.status_code == 404
+
+
+def test_project_create_invalid(session):
+    res = session.post("/projects", json={})
+    assert res.status_code == 400
+
+
+def test_project_delete_invalid(session):
+    res = session.delete("/projects/openshift-config")
+    assert res.status_code == 400
+
+
 def test_user_role(session, a_user, a_project):
-    res = session.get("/users/test_user/projects/test-project/roles/admin")
+    res = session.get("/users/test-user/projects/test-project/roles/admin")
     assert res.status_code == 200
     data = res.json()
     assert not data["object"]["has_role"]
-    res = session.put("/users/test_user/projects/test-project/roles/admin")
+    res = session.put("/users/test-user/projects/test-project/roles/admin")
     assert res.status_code == 200
     data = res.json()
-    assert data["object"]["users"] == ["test_user"]
-    res = session.delete("/users/test_user/projects/test-project/roles/admin")
+    assert data["object"]["users"] == ["test-user"]
+    res = session.delete("/users/test-user/projects/test-project/roles/admin")
     assert res.status_code == 200
     data = res.json()
     assert data["object"]["users"] == []
 
 
 def test_quota(session, a_project):
+    quotarequest = models.QuotaRequest(multiplier=1)
+
     res = session.get("/projects/test-project/quotas")
     assert res.status_code == 200
     data = res.json()
     assert data["object"]["items"] == []
-    res = session.put("/projects/test-project/quotas", json={"multiplier": 1})
+    res = session.put("/projects/test-project/quotas", json=quotarequest.dict())
     assert res.status_code == 200
     res = session.get("/projects/test-project/quotas")
     assert res.status_code == 200

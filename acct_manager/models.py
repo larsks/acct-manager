@@ -20,7 +20,7 @@ class UserRequest(pydantic.BaseModel):
     def validate_fullName(cls, value, values):  # pylint: disable=no-self-argument
         """Default fullName to name if not provided"""
         if value is None:
-            return values["name"]
+            return values.get("name")
 
         return value
 

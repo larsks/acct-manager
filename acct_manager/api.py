@@ -82,6 +82,12 @@ def handle_exceptions(func):
             return flask.Response(
                 message.json(exclude_none=True), status=404, mimetype="application/json"
             )
+        except exc.ValidationError as err:
+            flask.current_app.logger.warning("validation error: %s", err)
+            message = models.Response(error=True, message=f"validation error: {err}")
+            return flask.Response(
+                message.json(exclude_none=True), status=400, mimetype="application/json"
+            )
         except exc.InvalidProjectError as err:
             # If the client attempts to operate on an invalid object (that is,
             # one without the required label), log a message but otherwise

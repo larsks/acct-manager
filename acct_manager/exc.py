@@ -1,4 +1,7 @@
 # pylint: disable=unused-import
+from pydantic.error_wrappers import ValidationError  # noqa
+
+# pylint: disable=unused-import
 from kubernetes.client.exceptions import ApiException  # noqa
 
 # pylint: disable=unused-import
