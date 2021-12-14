@@ -18,7 +18,9 @@ def logger():
 
 @pytest.fixture
 def moc(api, logger):
-    _moc = acct_manager.moc_openshift.MocOpenShift(api, "fake", logger)
+    _moc = acct_manager.moc_openshift.MocOpenShift(
+        api, "fake_idp", "fake_quotas", logger
+    )
     return _moc
 
 

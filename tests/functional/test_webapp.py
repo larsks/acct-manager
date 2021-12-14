@@ -49,8 +49,9 @@ def a_project(session):
     )
     assert res.status_code == 200
     yield res
+    res = session.delete("/projects/test-project")
     while True:
-        res = session.delete("/projects/test-project")
+        res = session.get("/projects/test-project")
         if res.status_code == 404:
             break
 
@@ -90,3 +91,22 @@ def test_user_role(session, a_user, a_project):
     assert res.status_code == 200
     data = res.json()
     assert data["object"]["users"] == []
+
+
+def test_quota(session, a_project):
+    res = session.get("/projects/test-project/quotas")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["object"]["items"] == []
+    res = session.put("/projects/test-project/quotas", json={"multiplier": 1})
+    assert res.status_code == 200
+    res = session.get("/projects/test-project/quotas")
+    assert res.status_code == 200
+    data = res.json()
+    assert len(data["object"]["items"]) >= 1
+    res = session.delete("/projects/test-project/quotas", json={"multiplier": 1})
+    assert res.status_code == 200
+    res = session.get("/projects/test-project/quotas")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["object"]["items"] == []

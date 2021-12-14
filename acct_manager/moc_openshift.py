@@ -70,11 +70,13 @@ class MocOpenShift:
         ("identities", "user.openshift.io/v1", "Identity"),
         ("useridentitymappings", "user.openshift.io/v1", "UserIdentityMapping"),
         ("rolebindings", "rbac.authorization.k8s.io/v1", "RoleBinding"),
+        ("resourcequotas", "v1", "ResourceQuota"),
     ]
 
-    def __init__(self, api, identity_provider, logger):
+    def __init__(self, api, identity_provider, quota_file, logger):
         self.api = api
         self.identity_provider = identity_provider
+        self.quota_file = quota_file
         self.logger = logger
         self.setup_resource_apis()
 
@@ -430,3 +432,76 @@ class MocOpenShift:
         self.delete_identity(name)
         self.remove_user_from_all_groups(name)
         self.delete_user(name)
+
+    def read_quota_file(self):
+        """Read quota definitions"""
+        return models.QuotaFile.parse_file(self.quota_file)
+
+    def get_resourcequota(self, project):
+        """Get resourcequotas for a project"""
+        self.logger.info("get resourcequotas in project %s", project)
+        quotas = self.resources.resourcequotas.get(
+            namespace=project, label_selector="massopen.cloud/project"
+        )
+        return models.ResourceQuotaList.from_api(quotas)
+
+    def delete_resourcequota(self, project):
+        """Delete all resourcequotas in a project"""
+        self.logger.info("deleting resourcequotas in project %s", project)
+        quotas = self.get_resourcequota(project)
+        for quota in quotas.items:
+            self.logger.debug(
+                "deleting resourcequota %s from project %s",
+                quota.metadata.name,
+                project,
+            )
+            self.resources.resourcequotas.delete(
+                name=quota.metadata.name, namespace=project
+            )
+
+    def generate_resourcequotas(self, project, multiplier):
+        """Generate resourcequotas by applying multiplier to quota definition"""
+        self.logger.info(
+            "generating resourcequotas for project %s with multipler %d",
+            project,
+            multiplier,
+        )
+        quotafile = self.read_quota_file()
+        quotas = models.ResourceQuotaList()
+        for scope, spec in quotafile.dict().items():
+            if spec is None:
+                continue
+            name = f"{project}-{scope}".lower()
+            _scope = None if scope == "Project" else scope
+            values = {}
+            for qname, qvals in spec.items():
+                value = qvals["base"] * qvals["coefficient"] * multiplier
+                units = qvals["units"] if qvals["units"] else ""
+                values[qname] = f"{value}{units}"
+            r = models.ResourceQuota.from_quotaspec(name, project, _scope, values)
+            quotas.items.append(r)
+
+        return quotas
+
+    def create_resourcequota(self, project, multiplier):
+        """Create resourcequotas for a project"""
+        self.logger.info(
+            "creating resourcequotas for project %s with multiplier %d",
+            project,
+            multiplier,
+        )
+        quotas = self.generate_resourcequotas(project, multiplier)
+        for quota in quotas.items:
+            self.logger.debug(
+                "creating resourcequota %s for project %s",
+                quota.metadata.name,
+                project,
+            )
+            self.resources.resourcequotas.create(body=quota.dict(exclude_none=True))
+
+        return quotas
+
+    def update_resourcequota(self, project, multiplier):
+        """Delete and re-create quotas"""
+        self.delete_resourcequota(project)
+        return self.create_resourcequota(project, multiplier)

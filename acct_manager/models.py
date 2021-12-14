@@ -2,6 +2,13 @@ from typing import Optional, Union
 
 import pydantic
 
+VALID_SCOPE_NAMES = (
+    "Terminating",
+    "NotTerminating",
+    "BestEffort",
+    "NotBestEffort",
+)
+
 
 class UserRequest(pydantic.BaseModel):
     """Request to create a user"""
@@ -195,3 +202,107 @@ class HasRoleResult(pydantic.BaseModel):
     project: str
     role: str
     has_role: bool
+
+
+class QuotaSpec(pydantic.BaseModel):
+    """A single quota specification"""
+
+    base: int
+    coefficient: int
+    units: Optional[str]
+
+    @pydantic.validator("coefficient")
+    def validate_coefficient(
+        cls, value, values
+    ):  # pylint: disable=no-self-argument,unused-argument
+        """Ensure that coefficient is non-zero"""
+        if value == 0:
+            raise ValueError(value)
+        return value
+
+
+class QuotaFile(pydantic.BaseModel):
+    """Quota definition file"""
+
+    Project: Optional[dict[str, QuotaSpec]]
+    Terminating: Optional[dict[str, QuotaSpec]]
+    NotTerminating: Optional[dict[str, QuotaSpec]]
+    BestEffort: Optional[dict[str, QuotaSpec]]
+    NotBestEffort: Optional[dict[str, QuotaSpec]]
+
+
+class ResourceQuotaSpec(pydantic.BaseModel):
+    """Spec for a v1 ResourceQuota"""
+
+    hard: Optional[dict[str, str]]
+    scopes: Optional[list[str]]
+
+    @pydantic.validator("scopes")
+    def validate_scopes(
+        cls, value, values
+    ):  # pylint: disable=no-self-argument,unused-argument
+        """Ensure that scope name is valid"""
+        for scope in value:
+            if scope not in VALID_SCOPE_NAMES:
+                raise ValueError(value)
+
+            return value
+
+
+class ResourceQuota(Resource):
+    """A v1 ResourceQuota"""
+
+    apiVersion: str = "v1"
+    kind: str = "ResourceQuota"
+    metadata: NamespacedMetadata
+    spec: ResourceQuotaSpec
+
+    @classmethod
+    def from_quotaspec(cls, name, project, scope, quotaspec):
+        """Transform quota values into a ResourceQuota"""
+        spec = ResourceQuotaSpec(
+            hard=quotaspec,
+            scopes=[scope] if scope else [],
+        )
+        return cls(
+            metadata=NamespacedMetadata(
+                name=name, namespace=project, labels={"massopen.cloud/project": project}
+            ),
+            spec=spec,
+        )
+
+
+class ResourceQuotaList(pydantic.BaseModel):
+    """A list of v1 ResourceQuotas"""
+
+    items: Optional[list[ResourceQuota]]
+
+    @pydantic.validator("items", always=True)
+    def validate_items(
+        cls, value, values
+    ):  # pylint: disable=no-self-argument,unused-argument
+        """Ensure items is always a list (and never None)"""
+        if value is None:
+            value = []
+
+        return value
+
+    @classmethod
+    def from_api(cls, quotalist):
+        """Create a ResourceQuotaList from a list of quotas"""
+        return cls(items=[ResourceQuota(**dict(item)) for item in quotalist.items])
+
+
+class QuotaRequest(pydantic.BaseModel):
+    """A quota request"""
+
+    multiplier: int
+
+    @pydantic.validator("multiplier")
+    def validate_multiplier(
+        cls, value, values
+    ):  # pylint: disable=no-self-argument,unused-argument
+        """Ensure that multiplier is non-zero"""
+        if value == 0:
+            raise ValueError(value)
+        return value

@@ -21,6 +21,7 @@ ADMIN_USERNAME = os.environ.get("ACCT_MGR_ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.environ["ACCT_MGR_ADMIN_PASSWORD"]
 IDENTITY_PROVIDER = os.environ["ACCT_MGR_IDENTITY_PROVIDER"]
 AUTH_DISABLED = os.environ.get("ACCT_MGR_AUTH_DISABLED", "false").lower() == "true"
+QUOTA_FILE = os.environ.get("ACCT_MGR_QUOTA_FILE", "quotas.json")
 
 auth = flask_httpauth.HTTPBasicAuth()
 
@@ -134,7 +135,9 @@ def create_app():
     """Create Flask application instance"""
     app = flask.Flask(__name__)
     openshift_client = get_openshift_client()
-    moc = moc_openshift.MocOpenShift(openshift_client, IDENTITY_PROVIDER, app.logger)
+    moc = moc_openshift.MocOpenShift(
+        openshift_client, IDENTITY_PROVIDER, QUOTA_FILE, app.logger
+    )
 
     @app.route("/healthz", methods=GET)
     def healthcheck():
@@ -150,7 +153,7 @@ def create_app():
     @handle_exceptions
     @wrap_response
     def create_user():
-        req = moc_openshift.models.UserRequest(**flask.request.json)
+        req = models.UserRequest(**flask.request.json)
         user = moc.create_user_bundle(req.name, req.fullName)
         return user
 
@@ -178,7 +181,7 @@ def create_app():
     @handle_exceptions
     @wrap_response
     def create_project():
-        req = moc_openshift.models.ProjectRequest(**flask.request.json)
+        req = models.ProjectRequest(**flask.request.json)
         project = moc.create_project_bundle(
             req.name,
             req.requester,
@@ -237,5 +240,32 @@ def create_app():
     def delete_user_role(user_name, project_name, role_name):
         group = moc.remove_user_from_role(user_name, project_name, role_name)
         return group
+
+    @app.route("/projects/<project_name>/quotas", methods=GET)
+    @auth.login_required
+    @handle_exceptions
+    @wrap_response
+    def get_quota(project_name):
+        quotalist = moc.get_resourcequota(project_name)
+        return quotalist
+
+    @app.route("/projects/<project_name>/quotas", methods=PUT)
+    @auth.login_required
+    @handle_exceptions
+    @wrap_response
+    def update_quota(project_name):
+        qreq = models.QuotaRequest(**flask.request.json)
+        quotalist = moc.update_resourcequota(project_name, qreq.multiplier)
+        return quotalist
+
+    @app.route("/projects/<project_name>/quotas", methods=DELETE)
+    @auth.login_required
+    @handle_exceptions
+    @wrap_response
+    def delete_quota(project_name):
+        moc.delete_resourcequota(project_name)
+        return models.Response(
+            error=False, message=f"deleted quotas for project {project_name}"
+        )
 
     return app
