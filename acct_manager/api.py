@@ -203,7 +203,7 @@ def create_app():
         moc.delete_project_bundle(name)
         return models.Response(
             error=False,
-            message=f"deleted proejct {name}",
+            message=f"deleted project {name}",
         )
 
     @app.route(

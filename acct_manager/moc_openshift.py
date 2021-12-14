@@ -142,11 +142,8 @@ class MocOpenShift:
         This will raise an InvalidProjectError if an attempt is made to delete
         a project we didn't create."""
         self.logger.info("delete project %s", name)
-        try:
-            self.get_project(name)
-            self.resources.projects.delete(name=name)
-        except NotFoundError:
-            pass
+        self.get_project(name)
+        self.resources.projects.delete(name=name)
 
     def group_exists(self, name):
         """Return True if a group exists, False otherwise"""
@@ -225,17 +222,16 @@ class MocOpenShift:
     def delete_project_bundle(self, name):
         """Delete a project and associated resources"""
         self.logger.info("delete project bundle for %s", name)
-        try:
-            self.delete_project(name)
-        except NotFoundError:
-            pass
 
         for role in role_map:
             try:
                 group_name = f"{name}-{role}"
+                self.logger.debug("delete group %s", group_name)
                 self.delete_group(group_name)
             except NotFoundError:
                 pass
+
+        self.delete_project(name)
 
     def user_exists(self, name):
         """Return True if a user exists, False otherwise"""
@@ -267,12 +263,10 @@ class MocOpenShift:
         return user
 
     def delete_user(self, name):
-        """Delete a user
-
-        This will succeed whether or not the named user exists."""
+        """Delete a user"""
         self.logger.info("delete user %s", name)
-        if self.user_exists(name):
-            self.resources.users.delete(name=name)
+        self.get_user(name)
+        self.resources.users.delete(name=name)
 
     def create_rolebinding(self, project, group, role):
         """Create a rolebinding in a project binding a group to a role"""
@@ -433,7 +427,6 @@ class MocOpenShift:
     def delete_user_bundle(self, name):
         """Delete a user and associated resources"""
         self.logger.info("delete user bundle for %s", name)
-        self.get_user(name)
-        self.delete_user(name)
         self.delete_identity(name)
         self.remove_user_from_all_groups(name)
+        self.delete_user(name)
