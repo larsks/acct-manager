@@ -415,9 +415,25 @@ class MocOpenShift:
 
         return user
 
+    def remove_user_from_all_groups(self, name):
+        self.logger.info("removing user %s from all groups", name)
+        groups = self.resources.groups.get(label_selector="massopen.cloud/project")
+        for group in groups.items:
+            group = models.Group(**dict(group))
+            self.logger.debug(
+                "removing user %s from group %s", name, group.metadata.name
+            )
+            try:
+                group.users.remove(name)
+            except (ValueError, AttributeError):
+                pass
+            else:
+                self.resources.groups.patch(body=group.dict(exclude_none=True))
+
     def delete_user_bundle(self, name):
         """Delete a user and associated resources"""
         self.logger.info("delete user bundle for %s", name)
         self.get_user(name)
         self.delete_user(name)
         self.delete_identity(name)
+        self.remove_user_from_all_groups(name)
