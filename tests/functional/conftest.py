@@ -1,3 +1,4 @@
+# pylint: disable=missing-class-docstring,missing-function-docstring,redefined-outer-name
 import os
 import random
 import string
@@ -24,6 +25,7 @@ class Session(requests.Session):
         self.auth = ("admin", os.environ["ACCT_MGR_ADMIN_PASSWORD"])
         self.headers["content-type"] = "application/json"
 
+    # pylint: disable=arguments-differ
     def request(self, method, url, **kwargs):
         if not url.startswith("http"):
             url = urllib.parse.urljoin(self.endpoint, url)

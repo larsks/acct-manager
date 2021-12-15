@@ -1,7 +1,8 @@
+# pylint: disable=missing-class-docstring,missing-function-docstring,redefined-outer-name
+from unittest import mock
+
 import json
 import pytest
-
-from unittest import mock
 
 import acct_manager.api
 from acct_manager import models, exc
