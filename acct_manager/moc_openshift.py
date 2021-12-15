@@ -226,12 +226,9 @@ class MocOpenShift:
         self.logger.info("delete project bundle for %s", name)
 
         for role in role_map:
-            try:
-                group_name = f"{name}-{role}"
-                self.logger.debug("delete group %s", group_name)
-                self.delete_group(group_name)
-            except NotFoundError:
-                pass
+            group_name = f"{name}-{role}"
+            self.logger.debug("delete group %s", group_name)
+            self.delete_group(group_name)
 
         self.delete_project(name)
 
