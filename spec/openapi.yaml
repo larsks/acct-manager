@@ -5,7 +5,7 @@ info:
     Common API to link oboarding system to services such as
     OpenStack and OpenShift.
   contact:
-    url: https://massopen.cloud/
+    url: https://github.com/larsks/acct-manager
   version: "20211215"
 servers:
   - url: http://localhost:8080

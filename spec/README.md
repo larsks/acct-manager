@@ -4,4 +4,4 @@ The OpenAPI specification for this service is in
 [openapi.yaml](openapi.yaml). You can find an HTML version of this
 specification [here][].
 
-[here]: https://oddbit.com/acct-manager/
+[here]: http://oddbit.com/acct-manager
