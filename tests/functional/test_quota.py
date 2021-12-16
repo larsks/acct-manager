@@ -1,3 +1,5 @@
+"""Test quota API"""
+
 # pylint: disable=missing-class-docstring,missing-function-docstring,redefined-outer-name
 from acct_manager import models
 

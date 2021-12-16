@@ -18,16 +18,45 @@ def client(openshift):
     acct_manager.api.AUTH_DISABLED = True
     with mock.patch("acct_manager.api.get_openshift_client") as fake_get_client:
         fake_get_client.return_value = openshift
-        app = acct_manager.api.create_app(TESTING=True)
+        app = acct_manager.api.create_app(
+            TESTING=True,
+            IDENTITY_PROVIDER="fake",
+            ADMIN_PASSWORD="fake",
+            AUTH_DISABLED="true",
+        )
 
         with app.test_client() as client:
             yield client
 
 
-def test_healthcheck(client):
-    res = client.get("/healthz")
+@pytest.fixture
+def client_auth(openshift):
+    acct_manager.api.AUTH_DISABLED = True
+    with mock.patch("acct_manager.api.get_openshift_client") as fake_get_client:
+        fake_get_client.return_value = openshift
+        app = acct_manager.api.create_app(
+            TESTING=True,
+            IDENTITY_PROVIDER="fake",
+            ADMIN_PASSWORD="fake",
+        )
+
+        with app.test_client() as client:
+            yield client
+
+
+def test_healthcheck(client_auth):
+    """Test that we can reach the healthcheck endpoint when authentication
+    is enabled and we are not providing any credentials."""
+    res = client_auth.get("/healthz")
     assert res.status_code == 200
     assert b"OK" in res.data
+
+
+def test_get_user_auth(client_auth):
+    """Test that we receive a 401 Unauthorized response when we attempt
+    to access an authenticated endpoint without providing credentials."""
+    res = client_auth.get("/users/test-user")
+    assert res.status_code == 401
 
 
 def test_create_user(client):
@@ -97,4 +126,4 @@ def test_delete_project_invalid(client):
 
         fake_delete_project_bundle.side_effect = exc.InvalidProjectError()
         res = client.delete("/projects/test-project")
-        assert res.status_code == 400
+        assert res.status_code == 403

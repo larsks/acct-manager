@@ -1,3 +1,4 @@
+"""Exceptions raised by the acct_manager api"""
 # pylint: disable=unused-import
 from pydantic.error_wrappers import ValidationError  # noqa
 
@@ -24,11 +25,15 @@ class InvalidProjectError(AccountManagerError):
     """
 
 
-class ProjectExistsError(AccountManagerError):
+class ObjectExistsError(AccountManagerError):
+    """Parent class for conflict errors"""
+
+
+class ProjectExistsError(ObjectExistsError):
     """Raised when attempting to create a new project with a conflicting name"""
 
 
-class GroupExistsError(AccountManagerError):
+class GroupExistsError(ObjectExistsError):
     """Raised when attempting to create a new group with a conflicting name"""
 
 

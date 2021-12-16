@@ -1,0 +1,33 @@
+# Run unit tests (but only if this commit or PR modifies Python
+# files).
+
+name: Unit tests
+on:
+  push:
+    paths:
+      - "**/*.py"
+  pull_request:
+    paths:
+      - "**/*.py"
+
+jobs:
+  run-unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r test-requirements.txt
+
+      - name: Run unit tests
+        run: |
+          pytest tests/unit

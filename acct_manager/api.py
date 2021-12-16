@@ -17,14 +17,28 @@ POST = ["POST"]
 DELETE = ["DELETE"]
 PUT = ["PUT"]
 
-ADMIN_USERNAME = os.environ.get("ACCT_MGR_ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.environ["ACCT_MGR_ADMIN_PASSWORD"]
-IDENTITY_PROVIDER = os.environ["ACCT_MGR_IDENTITY_PROVIDER"]
-AUTH_DISABLED = os.environ.get("ACCT_MGR_AUTH_DISABLED", "false").lower() == "true"
-QUOTA_FILE = os.environ.get("ACCT_MGR_QUOTA_FILE", "quotas.json")
+DEFAULTS = {
+    "ADMIN_USERNAME": "admin",
+    "QUOTA_FILE": "quotas.json",
+    "ENVVAR_PREFIX": "ACCT_MGR_",
+}
 
 
-def load_config():
+def load_env_config(prefix):
+    """Load configuration from environment variables"""
+
+    config = {}
+    for name, value in os.environ.items():
+        if not name.startswith(prefix):
+            continue
+
+        name = name[len(prefix) :]
+        config[name] = value
+
+    return config
+
+
+def load_kube_config():
     """Attempt to load the kubernetes config.
 
     First attempt to load the incluster configuration, and if that fails, try
@@ -37,7 +51,7 @@ def load_config():
 
 def get_openshift_client():
     """Create and return an OpenShift API client"""
-    load_config()
+    load_kube_config()
     k8s_client = kubernetes.client.api_client.ApiClient()
     return openshift.dynamic.DynamicClient(k8s_client)
 
@@ -62,43 +76,30 @@ def handle_exceptions(func):
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
+        status = 400
+
         try:
             return func(*args, **kwargs)
         except moc_openshift.NotFoundError:
             message = models.Response(error=True, message="object not found")
-            return flask.Response(
-                message.json(exclude_none=True), status=404, mimetype="application/json"
-            )
-        except exc.ValidationError as err:
-            flask.current_app.logger.warning("validation error: %s", err)
-            message = models.Response(error=True, message=f"validation error: {err}")
-            return flask.Response(
-                message.json(exclude_none=True), status=400, mimetype="application/json"
-            )
+            status = 404
+        except (exc.ConflictError, exc.ObjectExistsError):
+            message = models.Response(error=True, message="object already exists")
+            status = 409
         except exc.InvalidProjectError as err:
-            # If the client attempts to operate on an invalid object (that is,
-            # one without the required label), log a message but otherwise
-            # treat it as a 404 error.
             flask.current_app.logger.warning(
                 "attempt to operate on invalid object: %s", err.obj
             )
             message = models.Response(error=True, message="invalid project")
-            return flask.Response(
-                message.json(exclude_none=True), status=400, mimetype="application/json"
-            )
-        except exc.ConflictError:
-            message = models.Response(error=True, message="object already exists")
-            return flask.Response(
-                message.json(exclude_none=True), status=409, mimetype="application/json"
-            )
+            status = 403
+        except exc.ValidationError as err:
+            flask.current_app.logger.warning("validation error: %s", err)
+            message = models.Response(error=True, message=f"validation error: {err}")
         except exc.AccountManagerError as err:
             flask.current_app.logger.warning("account manager errror: %s", err)
             message = models.Response(
                 error=True,
                 message=f"account manager API error: {err}",
-            )
-            return flask.Response(
-                message.json(exclude_none=True), status=400, mimetype="application/json"
             )
         except exc.ApiException as err:
             flask.current_app.logger.error("kubernetes api error: %s", err)
@@ -106,9 +107,10 @@ def handle_exceptions(func):
                 error=True,
                 message="Unexpected kubernetes API error",
             )
-            return flask.Response(
-                message.json(exclude_none=True), status=400, mimetype="application/json"
-            )
+
+        return flask.Response(
+            message.json(exclude_none=True), status=status, mimetype="application/json"
+        )
 
     return wrapper
 
@@ -117,12 +119,27 @@ def handle_exceptions(func):
 def create_app(**config):
     """Create Flask application instance"""
 
+    openshift_client = get_openshift_client()
+
     auth = flask_httpauth.HTTPBasicAuth()
     app = flask.Flask(__name__)
+
+    # Configure the application by reading config from:
+    #
+    # 1. The defaults
+    # 2. Parameters passed to create_app
+    # 3. The environment
+    #
+    # (Later settings override earlier ones)
+    app.config.from_mapping(DEFAULTS)
     app.config.from_mapping(config)
-    openshift_client = get_openshift_client()
+    app.config.from_mapping(load_env_config(app.config["ENVVAR_PREFIX"]))
+
     moc = moc_openshift.MocOpenShift(
-        openshift_client, IDENTITY_PROVIDER, QUOTA_FILE, app.logger
+        openshift_client,
+        app.config["IDENTITY_PROVIDER"],
+        app.config["QUOTA_FILE"],
+        app.logger,
     )
 
     @auth.verify_password
@@ -133,8 +150,9 @@ def create_app(**config):
         AUTH_DISABLED is True. Return False otherwise.
         """
 
-        return AUTH_DISABLED or (
-            username == ADMIN_USERNAME and password == ADMIN_PASSWORD
+        return app.config.get("AUTH_DISABLED") or (
+            username == app.config["ADMIN_USERNAME"]
+            and password == app.config["ADMIN_PASSWORD"]
         )
 
     @app.route("/healthz", methods=GET)

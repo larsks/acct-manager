@@ -1,3 +1,4 @@
+"""Python API for interesting with OpenShift"""
 from types import SimpleNamespace
 
 # pylint: disable=unused-import
@@ -263,6 +264,7 @@ class MocOpenShift:
         self.logger.info("create rolebinding for project %s role %s", project, role)
         check_role_name(role)
         rb_name = make_group_name(project, role)
+        # pylint: disable=invalid-name
         rb = models.RoleBinding(
             metadata=models.NamespacedMetadata(
                 namespace=project,
@@ -377,8 +379,8 @@ class MocOpenShift:
         self.logger.info("create identity mapping for %s", name)
         ident_name = self.qualify_user_name(name)
         mapping = models.UserIdentityMapping(
-            user=models.identityUser(name=name),
-            identity=models.identityUser(name=ident_name),
+            user=models.IdentityUser(name=name),
+            identity=models.IdentityUser(name=ident_name),
         )
         self.resources.useridentitymappings.create(body=mapping.dict(exclude_none=True))
         return mapping
@@ -400,6 +402,7 @@ class MocOpenShift:
         return user
 
     def remove_user_from_all_groups(self, name):
+        """Remove a user from all managed groups"""
         self.logger.info("removing user %s from all groups", name)
         groups = self.resources.groups.get(label_selector="massopen.cloud/project")
         for group in groups.items:
@@ -454,6 +457,9 @@ class MocOpenShift:
             project,
             multiplier,
         )
+
+        # We read this for every request in case it changes while
+        # the service is running.
         quotafile = self.read_quota_file()
         quotas = models.ResourceQuotaList()
         for scope, spec in quotafile.dict().items():
@@ -466,8 +472,8 @@ class MocOpenShift:
                 value = qvals["base"] * qvals["coefficient"] * multiplier
                 units = qvals["units"] if qvals["units"] else ""
                 values[qname] = f"{value}{units}"
-            r = models.ResourceQuota.from_quotaspec(name, project, _scope, values)
-            quotas.items.append(r)
+            quota = models.ResourceQuota.from_quotaspec(name, project, _scope, values)
+            quotas.items.append(quota)
 
         return quotas
 

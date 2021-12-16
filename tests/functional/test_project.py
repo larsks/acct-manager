@@ -1,3 +1,5 @@
+"""Test project api"""
+
 # pylint: disable=missing-class-docstring,missing-function-docstring,redefined-outer-name
 from acct_manager import models
 
@@ -34,6 +36,6 @@ def test_project_delete_invalid(session, ocp_api, suffix):
     try:
         projects.create(body=project.dict(exclude_none=True))
         res = session.delete(f"/projects/{name}")
-        assert res.status_code == 400
+        assert res.status_code == 403
     finally:
         projects.delete(name=name)

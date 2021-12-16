@@ -1,3 +1,5 @@
+"""Common fixtures for functional tests"""
+
 # pylint: disable=missing-class-docstring,missing-function-docstring,redefined-outer-name
 import os
 import random

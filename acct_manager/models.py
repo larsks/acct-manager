@@ -1,3 +1,5 @@
+"""Pydantic models for the onboarding microservice API"""
+
 import re
 from typing import Optional, Union
 
@@ -18,7 +20,9 @@ class UserRequest(pydantic.BaseModel):
     fullName: Optional[str]
 
     @pydantic.validator("fullName", always=True)
-    def validate_fullName(cls, value, values):  # pylint: disable=no-self-argument
+    def validate_fullName(
+        cls, value, values
+    ):  # pylint: disable=no-self-use,no-self-argument,invalid-name
         """Default fullName to name if not provided"""
         if value is None:
             return values.get("name")
@@ -54,7 +58,7 @@ class Metadata(pydantic.BaseModel):
     @pydantic.validator("labels")
     def validate_labels(
         cls, value, values
-    ):  # pylint: disable=unused-argument,no-self-argument
+    ):  # pylint: disable=unused-argument,no-self-argument,no-self-use
         """Ensure that there are no null labels"""
         if value is not None:
             value = remove_null_keys(value)
@@ -63,14 +67,16 @@ class Metadata(pydantic.BaseModel):
     @pydantic.validator("annotations")
     def validate_annotations(
         cls, value, values
-    ):  # pylint: disable=unused-argument,no-self-argument
+    ):  # pylint: disable=unused-argument,no-self-argument,no-self-use
         """Ensure that there are no null annotations"""
         if value is not None:
             value = remove_null_keys(value)
         return value
 
     @pydantic.validator("name")
-    def validate_name(cls, name):  # pylint: disable=unused-argument,no-self-argument
+    def validate_name(
+        cls, name
+    ):  # pylint: disable=unused-argument,no-self-argument,no-self-use
         """Verify that name matches kubernetes naming requirements"""
         fixed_name = re.sub(r"[^\w:]+", "-", name, flags=re.ASCII).lower().strip("-")
         if name != fixed_name:
@@ -115,7 +121,7 @@ class Group(Resource):
     @pydantic.validator("users")
     def validate_users(
         cls, value, values
-    ):  # pylint: disable=unused-argument,no-self-argument
+    ):  # pylint: disable=unused-argument,no-self-argument,no-self-use
         """Ensure that users is always a list.
 
         This simplifies code that wants to iterate over the list of
@@ -135,7 +141,7 @@ class User(Resource):
     identities: Optional[list[str]]
 
 
-class identityUser(pydantic.BaseModel):
+class IdentityUser(pydantic.BaseModel):
     """A convenience class for identities and useridentitymappings"""
 
     name: Optional[str]
@@ -155,7 +161,7 @@ class Identity(Resource):
     extra: Optional[dict[str, str]]
     providerName: str
     providerUserName: str
-    user: Optional[identityUser]
+    user: Optional[IdentityUser]
 
 
 class UserIdentityMapping(Resource):
@@ -166,8 +172,8 @@ class UserIdentityMapping(Resource):
 
     apiVersion: str = "user.openshift.io/v1"
     kind: str = "UserIdentityMapping"
-    user: identityUser
-    identity: identityUser
+    user: IdentityUser
+    identity: IdentityUser
 
 
 class RoleRef(pydantic.BaseModel):
@@ -206,7 +212,7 @@ class QuotaSpec(pydantic.BaseModel):
     @pydantic.validator("coefficient")
     def validate_coefficient(
         cls, value, values
-    ):  # pylint: disable=no-self-argument,unused-argument
+    ):  # pylint: disable=no-self-argument,unused-argument,no-self-use
         """Ensure that coefficient is non-zero"""
         if value == 0:
             raise ValueError(value)
@@ -232,7 +238,7 @@ class ResourceQuotaSpec(pydantic.BaseModel):
     @pydantic.validator("scopes")
     def validate_scopes(
         cls, value, values
-    ):  # pylint: disable=no-self-argument,unused-argument
+    ):  # pylint: disable=no-self-argument,unused-argument,no-self-use
         """Ensure that scope name is valid"""
         for scope in value:
             if scope not in VALID_SCOPE_NAMES:
@@ -272,7 +278,7 @@ class ResourceQuotaList(pydantic.BaseModel):
     @pydantic.validator("items", always=True)
     def validate_items(
         cls, value, values
-    ):  # pylint: disable=no-self-argument,unused-argument
+    ):  # pylint: disable=no-self-argument,unused-argument,no-self-use
         """Ensure items is always a list (and never None)"""
         if value is None:
             value = []
@@ -293,7 +299,7 @@ class QuotaRequest(pydantic.BaseModel):
     @pydantic.validator("multiplier")
     def validate_multiplier(
         cls, value, values
-    ):  # pylint: disable=no-self-argument,unused-argument
+    ):  # pylint: disable=no-self-argument,unused-argument,no-self-use
         """Ensure that multiplier is non-zero"""
         if value == 0:
             raise ValueError(value)
@@ -308,18 +314,26 @@ class Response(pydantic.BaseModel):
 
 
 class ProjectResponse(Response):
+    """API response that contains a project"""
+
     project: Project
 
 
 class UserResponse(Response):
+    """API response that contains a user"""
+
     user: User
 
 
 class QuotaResponse(Response):
+    """API response that contains quota information"""
+
     quotas: ResourceQuotaList
 
 
 class RoleResponseData(pydantic.BaseModel):
+    """API response that contains role membership information"""
+
     user: str
     project: str
     role: str
@@ -333,4 +347,6 @@ class RoleResponse(Response):
 
 
 class GroupResponse(Response):
+    """API response that contains a group"""
+
     group: Group

@@ -1,3 +1,5 @@
+# Run pre-commit checks on all pushes and pull requests
+
 name: Pre-commit
 on:
   push:
@@ -20,18 +22,6 @@ jobs:
         run: |
           pip install pre-commit
 
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install -r test-requirements.txt
-
       - name: Run pre-commit
         run: |
           pre-commit run --all-files
-
-      - name: Run unit tests
-        env:
-          ACCT_MGR_ADMIN_PASSWORD: secret
-          ACCT_MGR_IDENTITY_PROVIDER: developer
-        run: |
-          pytest tests/unit

@@ -1,5 +1,11 @@
 # MOC Account Management Microservice
 
+## API specification
+
+You can find the OpenAPI specification for this API in
+[spec/openapi.yaml](spec/openapi.yaml). There is an HTML version of
+the spec available at <http://oddbit.com/acct-manager/>.
+
 ## Running the code
 
  In the following instructions I'm assuming you're using [Code Ready
@@ -86,6 +92,7 @@ That will deploy the following resources:
 - An `onboarding` ServiceAccount
 - An `onboarding` Deployment
 - An `onboarding-config` ConfigMap (with a hash suffix)
+- An `onboarding-credentials` Secret (with a hash suffix)
 - An `onboarding` service
 - An `onboarding` route (edge encrypted)
 - A ClusterRoleBinding granting the `onboarding` ServiceAccount
