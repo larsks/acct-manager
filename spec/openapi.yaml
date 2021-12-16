@@ -35,6 +35,8 @@ paths:
   /projects:
     post:
       operationId: createProject
+      tags:
+        - project
       summary: Create a new project
       security:
         - basicAuth: []
@@ -65,6 +67,8 @@ paths:
         required: true
     get:
       operationId: getProject
+      tags:
+        - project
       summary: Get information about a project
       security:
         - basicAuth: []
@@ -89,6 +93,8 @@ paths:
                 $ref: "#/components/schemas/Response"
     delete:
       operationId: deleteProject
+      tags:
+        - project
       summary: Delete a project
       security:
         - basicAuth: []
@@ -120,6 +126,8 @@ paths:
         required: true
     get:
       operationId: getProjectQuota
+      tags:
+        - quota
       summary: Get information about project quotas
       security:
         - basicAuth: []
@@ -144,6 +152,8 @@ paths:
                 $ref: "#/components/schemas/Response"
     put:
       operationId: updateProjectQuota
+      tags:
+        - quota
       summary: Update a project quota
       security:
         - basicAuth: []
@@ -173,6 +183,8 @@ paths:
                 $ref: "#/components/schemas/Response"
     delete:
       operationId: deleteProjectQuota
+      tags:
+        - quota
       summary: Delete a project quota
       security:
         - basicAuth: []
@@ -198,6 +210,8 @@ paths:
   /users:
     post:
       operationId: createUser
+      tags:
+        - user
       summary: Create a user
       security:
         - basicAuth: []
@@ -228,6 +242,8 @@ paths:
         required: true
     get:
       operationId: getUser
+      tags:
+        - user
       summary: Get information about a user
       security:
         - basicAuth: []
@@ -252,6 +268,8 @@ paths:
                 $ref: "#/components/schemas/Response"
     delete:
       operationId: deleteUser
+      tags:
+        - user
       summary: Delete a user
       security:
         - basicAuth: []
@@ -293,6 +311,8 @@ paths:
         required: true
     get:
       operationId: getUserRole
+      tags:
+        - role
       summary: Check if user has been granted role
       security:
         - basicAuth: []
@@ -317,6 +337,8 @@ paths:
                 $ref: "#/components/schemas/Response"
     put:
       operationId: grantUserRole
+      tags:
+        - role
       summary: Grant role to user on project
       security:
         - basicAuth: []
@@ -341,6 +363,8 @@ paths:
                 $ref: "#/components/schemas/Response"
     delete:
       operationId: revokeUserRole
+      tags:
+        - role
       summary: Revoke role for user on project
       security:
         - basicAuth: []
