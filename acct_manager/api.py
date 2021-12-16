@@ -152,7 +152,7 @@ def create_app():
         Unlike all other methods, requests to this endpoint do not require
         authentication.
         """
-        return "OK"
+        return flask.Response("OK", mimetype="text/plain")
 
     @app.route("/users", methods=POST)
     @auth.login_required
