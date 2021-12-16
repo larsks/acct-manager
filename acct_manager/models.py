@@ -1,3 +1,4 @@
+import re
 from typing import Optional, Union
 
 import pydantic
@@ -67,6 +68,14 @@ class Metadata(pydantic.BaseModel):
         if value is not None:
             value = remove_null_keys(value)
         return value
+
+    @pydantic.validator("name")
+    def validate_name(cls, name):  # pylint: disable=unused-argument,no-self-argument
+        """Verify that name matches kubernetes naming requirements"""
+        fixed_name = re.sub(r"[^\w]+", "-", name, flags=re.ASCII).lower().strip("-")
+        if name != fixed_name:
+            raise ValueError(name)
+        return name
 
 
 class NamespacedMetadata(Metadata):

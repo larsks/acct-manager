@@ -1,5 +1,3 @@
-import re
-
 from types import SimpleNamespace
 
 # pylint: disable=unused-import
@@ -16,13 +14,6 @@ role_map = {
     "member": "edit",
     "reader": "view",
 }
-
-
-def sanitize_project_name(name):
-    """Make a project name match kubernetes naming requirements"""
-    name = re.sub(r"[^\w]+", "-", name, flags=re.ASCII).lower()
-    name = name.strip("-")
-    return name
 
 
 def check_role_name(name):
