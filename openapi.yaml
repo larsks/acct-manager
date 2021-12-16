@@ -1,0 +1,557 @@
+openapi: "3.0.3"
+info:
+  title: MOC Onboarding Microservice API
+  description: >-
+    Common API to link oboarding system to services such as
+    OpenStack and OpenShift.
+  contact:
+    url: https://massopen.cloud/
+  version: "20211215"
+servers:
+  - url: http://localhost:8080
+    description: "Development server"
+  - url: https://onboarding-onboarding.apps-crc.testing
+    description: "CRC Deployment"
+
+##
+## PATHS
+##
+
+paths:
+  /healthz:
+    description: >-
+      Health check endpoint; this endpoint does not require authentication.
+    get:
+      operationId: healthcheck
+      summary: Check service health
+      responses:
+        "200":
+          description: Service is running
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: OK
+  /projects:
+    post:
+      operationId: createProject
+      summary: Create a new project
+      security:
+        - basicAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectRequest"
+      responses:
+        "200":
+          description: Project creation was successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectResponse"
+        "400":
+          description: Project creation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+  /projects/{project_name}:
+    parameters:
+      - name: project_name
+        in: path
+        schema:
+          type: string
+        required: true
+    get:
+      operationId: getProject
+      summary: Get information about a project
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Project exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectResponse"
+        "404":
+          description: Project does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+        "400":
+          description: An unexpected error occurred
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+    delete:
+      operationId: deleteProject
+      summary: Delete a project
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Project was deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+        "404":
+          description: Project does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+        "400":
+          description: An unexpected error occurred
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+  /projects/{project_name}/quotas:
+    parameters:
+      - name: project_name
+        in: path
+        schema:
+          type: string
+        required: true
+    get:
+      operationId: getProjectQuota
+      summary: Get information about project quotas
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Project quota information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceQuotaResponse"
+        "404":
+          description: Project does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+        "400":
+          description: An unexpected error occurred
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+    put:
+      operationId: updateProjectQuota
+      summary: Update a project quota
+      security:
+        - basicAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuotaRequest"
+      responses:
+        "200":
+          description: Project quota updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceQuotaResponse"
+        "404":
+          description: Project does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+        "400":
+          description: An unexpected error occurred
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+    delete:
+      operationId: deleteProjectQuota
+      summary: Delete a project quota
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Project quota deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+        "404":
+          description: Project does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+        "400":
+          description: An unexpected error occurred
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+  /users:
+    post:
+      operationId: createUser
+      summary: Create a user
+      security:
+        - basicAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRequest"
+      responses:
+        "200":
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: An unexpected error occurred
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+  /users/{user_name}:
+    parameters:
+      - name: user_name
+        in: path
+        schema:
+          type: string
+        required: true
+    get:
+      operationId: getUser
+      summary: Get information about a user
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: User exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "404":
+          description: User does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+        "400":
+          description: An unexpected error occurred
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+    delete:
+      operationId: deleteUser
+      summary: Delete a user
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+        "404":
+          description: User does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+        "400":
+          description: An unexpected error occurred
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+  /users/{user_name}/projects/{project_name}/roles/{role_name}:
+    parameters:
+      - name: user_name
+        in: path
+        schema:
+          type: string
+        required: true
+      - name: project_name
+        in: path
+        schema:
+          type: string
+        required: true
+      - name: role_name
+        in: path
+        schema:
+          type: string
+        required: true
+    get:
+      operationId: getUserRole
+      summary: Check if user has been granted role
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Information about role membership
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleResponse"
+        "404":
+          description: User or project does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+        "400":
+          description: An unexpected error occurred
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+    put:
+      operationId: grantUserRole
+      summary: Grant role to user on project
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Role granted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+        "404":
+          description: User or project does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+        "400":
+          description: An unexpected error occurred
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+    delete:
+      operationId: revokeUserRole
+      summary: Revoke role for user on project
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Role revoked successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+        "404":
+          description: User or project does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+        "400":
+          description: An unexpected error occurred
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+
+##
+## COMPONENTS
+##
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+  schemas:
+    Response:
+      type: object
+      required:
+        - error
+        - msg
+      properties:
+        error:
+          type: boolean
+        msg:
+          type: string
+    ProjectResponse:
+      allOf:
+        - $ref: "#/components/schemas/Response"
+        - type: object
+          required:
+            - project
+          properties:
+            project:
+              $ref: "#/components/schemas/Project"
+    UserResponse:
+      allOf:
+        - $ref: "#/components/schemas/Response"
+        - type: object
+          required:
+            - user
+          properties:
+            user:
+              $ref: "#/components/schemas/User"
+    RoleResponse:
+      allOf:
+        - $ref: "#/components/schemas/Response"
+        - type: object
+          required:
+            - role
+          properties:
+            role:
+              $ref: "#/components/schemas/UserRoleInformation"
+    UserRoleInformation:
+      type: object
+      required:
+        - user
+        - project
+        - role
+        - has_role
+      properties:
+        user:
+          type: string
+        project:
+          type: string
+        role:
+          type: string
+        has_role:
+          type: string
+    ResourceQuotaList:
+      type: list
+      items:
+        $ref: "#/components/schemas/ResourceQuota"
+    ResourceQuotaResponse:
+      allOf:
+        - $ref: "#/components/schemas/Response"
+        - type: object
+          properties:
+            quotas:
+              $ref: "#/components/schemas/ResourceQuotaList"
+    QuotaRequest:
+      type: object
+      required:
+        - multiplier
+      properties:
+        multiplier:
+          type: integer
+    Metadata:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        annotations:
+          type: object
+          additionalProperties:
+            type: string
+    NamespacedMetadata:
+      allOf:
+        - $ref: "#/components/schemas/Metadata"
+        - type: object
+          required:
+            - namespace
+          properties:
+            namespace:
+              type: string
+    ProjectRequest:
+      type: object
+      required:
+        - name
+        - requester
+      properties:
+        name:
+          type: string
+        requester:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+    Resource:
+      type: object
+      required:
+        - apiVersion
+        - kind
+      properties:
+        apiVersion:
+          type: string
+        kind:
+          type: string
+    Project:
+      allOf:
+        - $ref: "#/components/schemas/Resource"
+        - type: object
+          required:
+            - metadata
+          properties:
+            metadata:
+              $ref: "#/components/schemas/Metadata"
+    ResourceQuotaSpec:
+      type: object
+      properties:
+        hard:
+          type: object
+          additionalProperties:
+            type: string
+        scopes:
+          type: list
+          items:
+            type: string
+    ResourceQuota:
+      allOf:
+        - $ref: "#/components/schemas/Resource"
+        - type: object
+          required:
+            - metadata
+          properties:
+            metadata:
+              $ref: "#/components/schemas/NamespacedMetadata"
+            spec:
+              $ref: "#/components/schemas/ResourceQuotaSpec"
+    UserRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        fullName:
+          type: string
+    User:
+      allOf:
+        - $ref: "#/components/schemas/Resource"
+        - type: object
+          required:
+            - metadata
+          properties:
+            metadata:
+              $ref: "#/components/schemas/Metadata"
+            fullName:
+              type: string
+            groups:
+              type: list
+              items:
+                type: string
+            identities:
+              type: list
+              items:
+                type: string
+
+security:
+  - basicAuth: []
