@@ -12,6 +12,8 @@ spec:
           - name: ACCT_MGR_QUOTA_FILE
             value: /data/quotas.json
         envFrom:
+          - secretRef:
+              name: onboarding-credentials
           - configMapRef:
               name: onboarding-config
         image: quay.io/larsks/moc-acct-manager:latest

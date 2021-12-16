@@ -4,6 +4,11 @@ namespace: onboarding
 resources:
 - ../../base
 
+secretGenerator:
+  - name: onboarding-credentials
+    envs:
+      - onboarding-credentials.env
+
 configMapGenerator:
   - name: onboarding-config
     envs:
