@@ -23,8 +23,6 @@ IDENTITY_PROVIDER = os.environ["ACCT_MGR_IDENTITY_PROVIDER"]
 AUTH_DISABLED = os.environ.get("ACCT_MGR_AUTH_DISABLED", "false").lower() == "true"
 QUOTA_FILE = os.environ.get("ACCT_MGR_QUOTA_FILE", "quotas.json")
 
-auth = flask_httpauth.HTTPBasicAuth()
-
 
 def load_config():
     """Attempt to load the kubernetes config.
@@ -45,25 +43,14 @@ def get_openshift_client():
 
 
 def wrap_response(func):
-    """Convert returned models to dictionaries.
-
-    If an api functions returns something (such as an object from
-    acct_manager.models) with a 'dict', call that to transform the object into
-    a dictionary. Returning a dictionary will cause Flask to return a
-    JSON response.
-    """
+    """Convert returned models to dictionaries."""
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         res = func(*args, **kwargs)
 
         if hasattr(res, "dict"):
-            message = models.Response(
-                error=False,
-                object=res,
-            )
-
-            return message.dict(exclude_none=True)
+            return res.dict(exclude_none=True)
 
         return res
 
@@ -126,24 +113,29 @@ def handle_exceptions(func):
     return wrapper
 
 
-@auth.verify_password
-def verify_password(username, password):
-    """Validate user credentials.
-
-    Return True when the request provides the appropriate username and password, or if
-    AUTH_DISABLED is True. Return False otherwise.
-    """
-
-    return AUTH_DISABLED or (username == ADMIN_USERNAME and password == ADMIN_PASSWORD)
-
-
-def create_app():
+# pylint: disable=too-many-locals
+def create_app(**config):
     """Create Flask application instance"""
+
+    auth = flask_httpauth.HTTPBasicAuth()
     app = flask.Flask(__name__)
+    app.config.from_mapping(config)
     openshift_client = get_openshift_client()
     moc = moc_openshift.MocOpenShift(
         openshift_client, IDENTITY_PROVIDER, QUOTA_FILE, app.logger
     )
+
+    @auth.verify_password
+    def verify_password(username, password):
+        """Validate user credentials.
+
+        Return True when the request provides the appropriate username and password, or if
+        AUTH_DISABLED is True. Return False otherwise.
+        """
+
+        return AUTH_DISABLED or (
+            username == ADMIN_USERNAME and password == ADMIN_PASSWORD
+        )
 
     @app.route("/healthz", methods=GET)
     def healthcheck():
@@ -161,7 +153,11 @@ def create_app():
     def create_user():
         req = models.UserRequest(**flask.request.json)
         user = moc.create_user_bundle(req.name, req.fullName)
-        return user
+        return models.UserResponse(
+            error=False,
+            message=f"created user {user.metadata.name}",
+            user=user,
+        )
 
     @app.route("/users/<name>", methods=GET)
     @auth.login_required
@@ -169,7 +165,11 @@ def create_app():
     @wrap_response
     def get_user(name):
         user = moc.get_user(name)
-        return user
+        return models.UserResponse(
+            error=False,
+            message=f"user {user.metadata.name} exists",
+            user=user,
+        )
 
     @app.route("/users/<name>", methods=DELETE)
     @auth.login_required
@@ -202,7 +202,11 @@ def create_app():
     @wrap_response
     def get_project(name):
         project = moc.get_project(name)
-        return project
+        return models.ProjectResponse(
+            error=False,
+            message=f"project {name} exists",
+            project=project,
+        )
 
     @app.route("/projects/<name>", methods=DELETE)
     @auth.login_required
@@ -223,8 +227,12 @@ def create_app():
     @wrap_response
     def get_user_role(user_name, project_name, role_name):
         res = moc.user_has_role(user_name, project_name, role_name)
-        return models.HasRoleResult(
-            user=user_name, project=project_name, role=role_name, has_role=res
+        return models.RoleResponse(
+            error=False,
+            msg=f"role result for user {user_name} project {project_name} role {role_name}",
+            role=models.RoleResponseData(
+                user=user_name, project=project_name, role=role_name, has_role=res
+            ),
         )
 
     @app.route(
@@ -235,7 +243,11 @@ def create_app():
     @wrap_response
     def add_user_role(user_name, project_name, role_name):
         group = moc.add_user_to_role(user_name, project_name, role_name)
-        return group
+        return models.GroupResponse(
+            error=False,
+            msg=f"add user {user_name} to role {role_name} in project {project_name}",
+            group=group,
+        )
 
     @app.route(
         "/users/<user_name>/projects/<project_name>/roles/<role_name>", methods=DELETE
@@ -245,7 +257,11 @@ def create_app():
     @wrap_response
     def delete_user_role(user_name, project_name, role_name):
         group = moc.remove_user_from_role(user_name, project_name, role_name)
-        return group
+        return models.GroupResponse(
+            error=False,
+            msg=f"remove user {user_name} from role {role_name} in project {project_name}",
+            group=group,
+        )
 
     @app.route("/projects/<project_name>/quotas", methods=GET)
     @auth.login_required
@@ -253,7 +269,11 @@ def create_app():
     @wrap_response
     def get_quota(project_name):
         quotalist = moc.get_resourcequota(project_name)
-        return quotalist
+        return models.QuotaResponse(
+            error=False,
+            msg=f"quotas for project {project_name}",
+            quotas=quotalist,
+        )
 
     @app.route("/projects/<project_name>/quotas", methods=PUT)
     @auth.login_required
@@ -262,7 +282,11 @@ def create_app():
     def update_quota(project_name):
         qreq = models.QuotaRequest(**flask.request.json)
         quotalist = moc.update_resourcequota(project_name, qreq.multiplier)
-        return quotalist
+        return models.QuotaResponse(
+            error=False,
+            msg=f"updated quotas for project {project_name}",
+            quotas=quotalist,
+        )
 
     @app.route("/projects/<project_name>/quotas", methods=DELETE)
     @auth.login_required

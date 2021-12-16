@@ -18,7 +18,7 @@ def client(openshift):
     acct_manager.api.AUTH_DISABLED = True
     with mock.patch("acct_manager.api.get_openshift_client") as fake_get_client:
         fake_get_client.return_value = openshift
-        app = acct_manager.api.create_app()
+        app = acct_manager.api.create_app(TESTING=True)
 
         with app.test_client() as client:
             yield client
@@ -45,7 +45,7 @@ def test_create_user(client):
         )
         assert res.status_code == 200
         assert not res.json["error"]
-        user = models.User(**res.json["object"])
+        user = models.User(**res.json["user"])
         assert user.metadata.name == "test-user"
 
 
@@ -75,7 +75,7 @@ def test_get_user(client):
         res = client.get("/users/test-user")
         assert res.status_code == 200
         assert not res.json["error"]
-        user = models.User(**res.json["object"])
+        user = models.User(**res.json["user"])
         assert user.metadata.name == "test-user"
 
 

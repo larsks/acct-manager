@@ -7,7 +7,7 @@ def test_project(session, a_project):
     res = session.get(f"/projects/{a_project}")
     assert res.status_code == 200
     data = res.json()
-    assert data["object"]["metadata"]["name"] == a_project
+    assert data["project"]["metadata"]["name"] == a_project
 
 
 def test_project_not_found(session):

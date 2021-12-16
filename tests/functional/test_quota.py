@@ -9,7 +9,7 @@ def test_quota(session, a_project):
     res = session.get(url)
     assert res.status_code == 200
     data = res.json()
-    assert data["object"]["items"] == []
+    assert data["quotas"]["items"] == []
 
     # add a quota to the project
     quotarequest = models.QuotaRequest(multiplier=1)
@@ -20,7 +20,7 @@ def test_quota(session, a_project):
     res = session.get(url)
     assert res.status_code == 200
     data = res.json()
-    assert len(data["object"]["items"]) >= 1
+    assert len(data["quotas"]["items"]) >= 1
 
     # delete the quota
     res = session.delete(url)
@@ -30,4 +30,4 @@ def test_quota(session, a_project):
     # check that quotas have been deleted
     assert res.status_code == 200
     data = res.json()
-    assert data["object"]["items"] == []
+    assert data["quotas"]["items"] == []

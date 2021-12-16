@@ -72,7 +72,7 @@ class Metadata(pydantic.BaseModel):
     @pydantic.validator("name")
     def validate_name(cls, name):  # pylint: disable=unused-argument,no-self-argument
         """Verify that name matches kubernetes naming requirements"""
-        fixed_name = re.sub(r"[^\w]+", "-", name, flags=re.ASCII).lower().strip("-")
+        fixed_name = re.sub(r"[^\w:]+", "-", name, flags=re.ASCII).lower().strip("-")
         if name != fixed_name:
             raise ValueError(name)
         return name
@@ -196,23 +196,6 @@ class RoleBinding(Resource):
     subjects: list[Subject]
 
 
-class Response(pydantic.BaseModel):
-    """An API response object"""
-
-    error: bool
-    message: Optional[str]
-    object: Optional[pydantic.BaseModel]
-
-
-class HasRoleResult(pydantic.BaseModel):
-    """Response when querying if user has a given role in project"""
-
-    user: str
-    project: str
-    role: str
-    has_role: bool
-
-
 class QuotaSpec(pydantic.BaseModel):
     """A single quota specification"""
 
@@ -315,3 +298,39 @@ class QuotaRequest(pydantic.BaseModel):
         if value == 0:
             raise ValueError(value)
         return value
+
+
+class Response(pydantic.BaseModel):
+    """An API response object"""
+
+    error: bool
+    message: Optional[str]
+
+
+class ProjectResponse(Response):
+    project: Project
+
+
+class UserResponse(Response):
+    user: User
+
+
+class QuotaResponse(Response):
+    quotas: ResourceQuotaList
+
+
+class RoleResponseData(pydantic.BaseModel):
+    user: str
+    project: str
+    role: str
+    has_role: bool
+
+
+class RoleResponse(Response):
+    """Response when querying if user has a given role in project"""
+
+    role: RoleResponseData
+
+
+class GroupResponse(Response):
+    group: Group

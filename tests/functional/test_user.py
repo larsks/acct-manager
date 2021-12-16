@@ -3,7 +3,7 @@ def test_user(session, a_user):
     res = session.get(f"/users/{a_user}")
     assert res.status_code == 200
     data = res.json()
-    assert data["object"]["metadata"]["name"] == a_user
+    assert data["user"]["metadata"]["name"] == a_user
 
 
 def test_user_not_found(session):
