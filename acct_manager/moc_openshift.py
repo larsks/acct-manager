@@ -1,7 +1,7 @@
 """Python API for interesting with OpenShift"""
 import logging
 from types import SimpleNamespace
-from typing import Any, Optional, cast
+from typing import Any, Optional
 
 # pylint: disable=unused-import
 from kubernetes.client.exceptions import ApiException  # noqa: F401
@@ -98,7 +98,7 @@ class MocOpenShift:
         InvalidProjectError if the specified project exists but does not have
         the required label."""
         res = self.resources.projects.get(name=name)
-        project = cast(models.Project, models.Project.from_api(res))
+        project = models.Project.parse_obj(res)
 
         if not unsafe:
             check_if_safe(project)
@@ -166,7 +166,7 @@ class MocOpenShift:
         InvalidProjectError if the specified group exists but does not have
         the required label."""
         res = self.resources.groups.get(name=name)
-        group = cast(models.Group, models.Group.from_api(res))
+        group = models.Group.parse_obj(res)
 
         if not unsafe:
             check_if_safe(group)
@@ -253,7 +253,7 @@ class MocOpenShift:
         Return a models.User resource if it exists, otherwise raise a
         NotFoundError."""
         res = self.resources.users.get(name=name)
-        user = cast(models.User, models.User.from_api(res))
+        user = models.User.parse_obj(res)
         return user
 
     def create_user(self, name: str, full_name: Optional[str] = None) -> models.User:
@@ -308,7 +308,7 @@ class MocOpenShift:
         check_role_name(role)
         group_name = make_group_name(project, role)
         res = self.resources.groups.get(name=group_name)
-        group = cast(models.Group, models.Group.from_api(res))
+        group = models.Group.parse_obj(res)
         try:
             return group.users is not None and user in group.users
         except TypeError:
@@ -320,7 +320,7 @@ class MocOpenShift:
         check_role_name(role)
         group_name = make_group_name(project, role)
         res = self.resources.groups.get(name=group_name)
-        group = cast(models.Group, models.Group.from_api(res))
+        group = models.Group.parse_obj(res)
 
         if group.users is not None and user not in group.users:
             group.users.append(user)
@@ -336,7 +336,7 @@ class MocOpenShift:
         check_role_name(role)
         group_name = make_group_name(project, role)
         res = self.resources.groups.get(name=group_name)
-        group = cast(models.Group, models.Group.from_api(res))
+        group = models.Group.parse_obj(res)
 
         try:
             if group.users is not None:
@@ -356,7 +356,7 @@ class MocOpenShift:
         """
         ident_name = self.qualify_user_name(name)
         res = self.resources.identities.get(name=ident_name)
-        ident = cast(models.Identity, models.Identity.from_api(res))
+        ident = models.Identity.parse_obj(res)
         return ident
 
     def create_identity(self, name: str) -> models.Identity:
@@ -396,7 +396,7 @@ class MocOpenShift:
         self.logger.info("create identity mapping for %s", name)
         ident_name = self.qualify_user_name(name)
         mapping = models.UserIdentityMapping(
-            metadata=None,
+            metadata=models.Metadata(name=ident_name),
             user=models.IdentityUser(name=name),
             identity=models.IdentityUser(name=ident_name),
         )
@@ -415,6 +415,7 @@ class MocOpenShift:
         - A UserIdentityMapping associating the user with the identity
         """
         self.logger.info("create user bundle for %s", name)
+
         user = self.create_user(name, full_name=full_name)
         self.create_identity(name)
         self.create_user_identity_mapping(name)
@@ -454,7 +455,7 @@ class MocOpenShift:
         quotas = self.resources.resourcequotas.get(
             namespace=project, label_selector="massopen.cloud/project"
         )
-        return models.ResourceQuotaList.from_api(quotas)
+        return models.ResourceQuotaList.parse_obj(quotas)
 
     def delete_resourcequota(self, project: str) -> None:
         """Delete all resourcequotas in a project"""

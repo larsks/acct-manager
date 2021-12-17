@@ -1,10 +1,11 @@
 # pylint: disable=missing-class-docstring,missing-function-docstring,redefined-outer-name
+# type: ignore
 from unittest import mock
 
 import pytest
 
 from acct_manager import exc, models
-from .conftest import api_wrapper, fake_404_response
+from .conftest import fake_404_response
 
 
 def test_create_group(moc):
@@ -28,8 +29,7 @@ def test_create_group_exists(moc):
             name="test-group", labels={"massopen.cloud/project": "test-project"}
         )
     )
-    fake_group = api_wrapper(group)
-    moc.resources.groups.get.return_value = fake_group
+    moc.resources.groups.get.return_value = group
 
     with pytest.raises(exc.GroupExistsError):
         moc.create_group("test-group", "test-project")
@@ -41,9 +41,7 @@ def test_delete_group_exists(moc):
             name="test-group", labels={"massopen.cloud/project": "test-project"}
         )
     )
-    fake_group = mock.Mock()
-    fake_group.to_dict.return_value = group.dict()
-    moc.resources.groups.get.return_value = fake_group
+    moc.resources.groups.get.return_value = group
 
     moc.delete_group("test-group")
     assert mock.call.delete(name="test-group") in moc.resources.groups.method_calls
@@ -58,10 +56,7 @@ def test_delete_group_not_exists(moc):
 
 def test_delete_group_invalid(moc):
     group = models.Group(metadata=models.Metadata(name="test-group"))
-    fake_group = mock.Mock()
-    fake_group.to_dict.return_value = group.dict()
-
-    moc.resources.groups.get.return_value = fake_group
+    moc.resources.groups.get.return_value = group
 
     with pytest.raises(exc.InvalidProjectError):
         moc.delete_group("test-group")

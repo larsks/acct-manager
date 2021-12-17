@@ -1,4 +1,5 @@
 # pylint: disable=missing-class-docstring,missing-function-docstring,redefined-outer-name
+# type: ignore
 from unittest import mock
 
 import pytest
@@ -15,9 +16,3 @@ def moc():
     )
     _moc.resources = mock.Mock()
     return _moc
-
-
-def api_wrapper(resource):
-    wrapper = mock.Mock()
-    wrapper.to_dict.return_value = resource.dict(exclude_none=True)
-    return wrapper

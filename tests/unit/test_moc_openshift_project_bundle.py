@@ -1,10 +1,11 @@
 # pylint: disable=missing-class-docstring,missing-function-docstring,redefined-outer-name
+# type: ignore
 from unittest import mock
 
 import pytest
 
 from acct_manager import exc, models
-from .conftest import api_wrapper, fake_404_response
+from .conftest import fake_404_response
 
 project_bundle = [
     models.Project(
@@ -106,13 +107,13 @@ def test_create_project_bundle(moc):
 
 def test_delete_project_bundle(moc):
     moc.resources.groups.get.side_effect = [
-        api_wrapper(x) for x in project_bundle if x.kind == "Group"
+        x for x in project_bundle if x.kind == "Group"
     ]
     moc.resources.rolebindings.get.side_effect = [
-        api_wrapper(x) for x in project_bundle if x.kind == "RoleBinding"
+        x for x in project_bundle if x.kind == "RoleBinding"
     ]
     moc.resources.projects.get.side_effect = [
-        api_wrapper(x) for x in project_bundle if x.kind == "Project"
+        x for x in project_bundle if x.kind == "Project"
     ]
     moc.delete_project_bundle("test-project")
 
@@ -133,10 +134,10 @@ def test_delete_project_bundle(moc):
 def test_delete_project_bundle_group_notfound(moc):
     moc.resources.groups.get.side_effect = exc.NotFoundError(fake_404_response)
     moc.resources.rolebindings.get.side_effect = [
-        api_wrapper(x) for x in project_bundle if x.kind == "RoleBinding"
+        x for x in project_bundle if x.kind == "RoleBinding"
     ]
     moc.resources.projects.get.side_effect = [
-        api_wrapper(x) for x in project_bundle if x.kind == "Project"
+        x for x in project_bundle if x.kind == "Project"
     ]
     moc.delete_project_bundle("test-project")
 
@@ -156,10 +157,10 @@ def test_delete_project_bundle_group_notfound(moc):
 
 def test_delete_project_bundle_project_notfound(moc):
     moc.resources.groups.get.side_effect = [
-        api_wrapper(x) for x in project_bundle if x.kind == "Group"
+        x for x in project_bundle if x.kind == "Group"
     ]
     moc.resources.rolebindings.get.side_effect = [
-        api_wrapper(x) for x in project_bundle if x.kind == "RoleBinding"
+        x for x in project_bundle if x.kind == "RoleBinding"
     ]
     moc.resources.projects.get.side_effect = exc.NotFoundError(fake_404_response)
     with pytest.raises(exc.NotFoundError):

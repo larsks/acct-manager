@@ -101,11 +101,6 @@ class Resource(pydantic.BaseModel):
     kind: str
     metadata: Metadata
 
-    @classmethod
-    def from_api(cls, res: Any) -> Resource:
-        """Transform an API response to a model"""
-        return cls(**res.to_dict())
-
 
 class NamespacedResource(Resource):
     """A resource that requires a namespace"""

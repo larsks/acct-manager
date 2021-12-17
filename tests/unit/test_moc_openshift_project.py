@@ -1,11 +1,12 @@
 # pylint: disable=missing-class-docstring,missing-function-docstring,redefined-outer-name
+# type: ignore
 from unittest import mock
 
 import pydantic
 import pytest
 
 from acct_manager import exc, models
-from .conftest import api_wrapper, fake_404_response
+from .conftest import fake_404_response
 
 
 def test_get_project(moc):
@@ -14,7 +15,7 @@ def test_get_project(moc):
             name="test-project", labels={"massopen.cloud/project": "test-project"}
         )
     )
-    moc.resources.projects.get.return_value = api_wrapper(project)
+    moc.resources.projects.get.return_value = project
     res = moc.get_project("test-project")
     assert res == project
 
@@ -25,7 +26,7 @@ def test_project_exists(moc):
             name="test-project", labels={"massopen.cloud/project": "test-project"}
         )
     )
-    moc.resources.projects.get.return_value = api_wrapper(project)
+    moc.resources.projects.get.return_value = project
     assert moc.project_exists("test-project")
 
 
@@ -40,7 +41,7 @@ def test_get_project_unsafe(moc):
             name="test-project",
         )
     )
-    moc.resources.projects.get.return_value = api_wrapper(project)
+    moc.resources.projects.get.return_value = project
 
     with pytest.raises(exc.InvalidProjectError):
         moc.get_project("test-project")
@@ -68,9 +69,8 @@ def test_create_project_exists(moc):
             name="test-project", labels={"massopen.cloud/project": "test-project"}
         )
     )
-    fake_project = api_wrapper(project)
+    moc.resources.projects.get.return_value = project
 
-    moc.resources.projects.get.return_value = fake_project
     with pytest.raises(exc.ProjectExistsError):
         moc.create_project("test-project", "test-requester")
 
@@ -81,9 +81,8 @@ def test_delete_project_exists(moc):
             name="test-project", labels={"massopen.cloud/project": "test-project"}
         )
     )
-    fake_project = api_wrapper(project)
+    moc.resources.projects.get.return_value = project
 
-    moc.resources.projects.get.return_value = fake_project
     moc.delete_project("test-project")
     assert mock.call.delete(name="test-project") in moc.resources.projects.method_calls
 
@@ -99,9 +98,7 @@ def test_delete_project_not_exists(moc):
 
 def test_delete_project_invalid_target(moc):
     project = models.Project(metadata=models.Metadata(name="test-project"))
-    fake_project = api_wrapper(project)
-
-    moc.resources.projects.get.return_value = fake_project
+    moc.resources.projects.get.return_value = project
 
     with pytest.raises(exc.InvalidProjectError):
         moc.delete_project("test-project")

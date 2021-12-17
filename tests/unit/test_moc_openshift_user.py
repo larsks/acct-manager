@@ -1,10 +1,11 @@
 # pylint: disable=missing-class-docstring,missing-function-docstring,redefined-outer-name
+# type: ignore
 from unittest import mock
 
 import pytest
 
 from acct_manager import exc, models
-from .conftest import api_wrapper, fake_404_response
+from .conftest import fake_404_response
 
 
 def test_get_user(moc):
@@ -13,7 +14,7 @@ def test_get_user(moc):
             name="test-user",
         )
     )
-    moc.resources.users.get.return_value = api_wrapper(user)
+    moc.resources.users.get.return_value = user
     res = moc.get_user("test-user")
     assert res == user
 
@@ -24,7 +25,7 @@ def test_user_exists(moc):
             name="test-user",
         )
     )
-    moc.resources.users.get.return_value = api_wrapper(user)
+    moc.resources.users.get.return_value = user
     assert moc.user_exists("test-user")
 
 
@@ -40,7 +41,7 @@ def test_create_user(moc):
         ),
         fullName="Test User",
     )
-    moc.resources.users.get.return_value = api_wrapper(user)
+    moc.resources.users.get.return_value = user
     moc.create_user("test-user", "Test User")
     assert (
         mock.call.create(body=user.dict(exclude_none=True))
@@ -55,7 +56,7 @@ def test_delete_user_exists(moc):
         ),
         fullName="Test User",
     )
-    moc.resources.users.get.return_value = api_wrapper(user)
+    moc.resources.users.get.return_value = user
     moc.delete_user("test-user")
     assert mock.call.delete(name="test-user") in moc.resources.users.method_calls
 
