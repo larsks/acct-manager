@@ -135,21 +135,20 @@ following examples.
 ```
 $ http --auth admin:secret localhost:8080/users name=test-user
 HTTP/1.0 200 OK
-Content-Length: 185
 Content-Type: application/json
-Date: Sun, 12 Dec 2021 22:22:13 GMT
-Server: Werkzeug/2.0.2 Python/3.10.0
+Content-Length: 223
 
 {
-    "error": false,
-    "object": {
-        "apiVersion": "user.openshift.io/v1",
-        "fullName": "test-user",
-        "kind": "User",
-        "metadata": {
-            "name": "test-user"
-        }
+  "error": false, 
+  "message": "created user test-user", 
+  "user": {
+    "apiVersion": "user.openshift.io/v1", 
+    "fullName": "test-user", 
+    "kind": "User", 
+    "metadata": {
+      "name": "test-user"
     }
+  }
 }
 ```
 
@@ -158,17 +157,12 @@ Server: Werkzeug/2.0.2 Python/3.10.0
 ```
 $ http --auth admin:secret DELETE localhost:8080/users/test-user
 HTTP/1.0 200 OK
-Content-Length: 102
 Content-Type: application/json
-Date: Sun, 12 Dec 2021 22:22:47 GMT
-Server: Werkzeug/2.0.2 Python/3.10.0
+Content-Length: 61
 
 {
-    "error": false,
-    "object": {
-        "error": false,
-        "message": "deleted user test-user"
-    }
+  "error": false, 
+  "message": "deleted user test-user"
 }
 ```
 
@@ -177,26 +171,25 @@ Server: Werkzeug/2.0.2 Python/3.10.0
 ```
 $ http --auth admin:secret localhost:8080/projects name=test-project requester=test-user
 HTTP/1.0 200 OK
-Content-Length: 320
 Content-Type: application/json
-Date: Sun, 12 Dec 2021 22:23:29 GMT
-Server: Werkzeug/2.0.2 Python/3.10.0
+Content-Length: 367
 
 {
-    "error": false,
-    "object": {
-        "apiVersion": "project.openshift.io/v1",
-        "kind": "Project",
-        "metadata": {
-            "annotations": {
-                "openshift.io/requester": "test-user"
-            },
-            "labels": {
-                "massopen.cloud/project": "test-project"
-            },
-            "name": "test-project"
-        }
+  "error": false, 
+  "message": "created project test-project", 
+  "project": {
+    "apiVersion": "project.openshift.io/v1", 
+    "kind": "Project", 
+    "metadata": {
+      "annotations": {
+        "openshift.io/requester": "test-user"
+      }, 
+      "labels": {
+        "massopen.cloud/project": "test-project"
+      }, 
+      "name": "test-project"
     }
+  }
 }
 ```
 
