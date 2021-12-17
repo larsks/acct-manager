@@ -1,5 +1,7 @@
 """Python API for interesting with OpenShift"""
+import logging
 from types import SimpleNamespace
+from typing import Any, Optional, cast
 
 # pylint: disable=unused-import
 from kubernetes.client.exceptions import ApiException  # noqa: F401
@@ -17,13 +19,13 @@ role_map = {
 }
 
 
-def check_role_name(name):
+def check_role_name(name: str) -> None:
     """Check that the given role name is valid"""
     if name not in role_map:
         raise exc.InvalidRoleNameError(f"invalid role name: {name}")
 
 
-def check_if_safe(obj):
+def check_if_safe(obj: models.Resource) -> None:
     """Check if it's safe to delete or modify an object.
 
     We look for the massopen.cloud/project label, and if it doesn't exist,
@@ -35,12 +37,12 @@ def check_if_safe(obj):
         raise exc.InvalidProjectError(obj=obj)
 
 
-def make_group_name(project, role):
+def make_group_name(project: str, role: str) -> str:
     """Create a group name for the given project and role"""
     return f"{project}-{role}"
 
 
-def add_common_labels(obj, project_name):
+def add_common_labels(obj: models.Resource, project_name: str) -> None:
     """Add massopen.cloud/project label to object"""
     if obj.metadata.labels is None:
         obj.metadata.labels = {}
@@ -65,14 +67,16 @@ class MocOpenShift:
         ("resourcequotas", "v1", "ResourceQuota"),
     ]
 
-    def __init__(self, api, identity_provider, quota_file, logger):
+    def __init__(
+        self, api: Any, identity_provider: str, quota_file: str, logger: logging.Logger
+    ) -> None:
         self.api = api
         self.identity_provider = identity_provider
         self.quota_file = quota_file
         self.logger = logger
         self.setup_resource_apis()
 
-    def setup_resource_apis(self):
+    def setup_resource_apis(self) -> None:
         """Create API endpoints using the information in self.kinds"""
         self.resources = SimpleNamespace()
         for name, api_version, kind in self.kinds:
@@ -82,11 +86,11 @@ class MocOpenShift:
                 self.api.resources.get(api_version=api_version, kind=kind),
             )
 
-    def qualify_user_name(self, name):
+    def qualify_user_name(self, name: str) -> str:
         """Qualify a username with the identity provider name"""
         return f"{self.identity_provider}:{name}"
 
-    def get_project(self, name, unsafe=False):
+    def get_project(self, name: str, unsafe: bool = False) -> models.Project:
         """Look up a project in OpenShift.
 
         Return a models.Project resource if it exists, otherwise raise a
@@ -94,14 +98,14 @@ class MocOpenShift:
         InvalidProjectError if the specified project exists but does not have
         the required label."""
         res = self.resources.projects.get(name=name)
-        project = models.Project.from_api(res)
+        project = cast(models.Project, models.Project.from_api(res))
 
         if not unsafe:
             check_if_safe(project)
 
         return project
 
-    def project_exists(self, name):
+    def project_exists(self, name: str) -> bool:
         """Return True if the named project exists, False otherwise"""
         try:
             self.get_project(name, unsafe=True)
@@ -110,7 +114,13 @@ class MocOpenShift:
         else:
             return True
 
-    def create_project(self, name, requester, display_name=None, description=None):
+    def create_project(
+        self,
+        name: str,
+        requester: str,
+        display_name: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> models.Project:
         """Create a new project"""
         self.logger.info("create project %s", name)
         if self.project_exists(name):
@@ -130,7 +140,7 @@ class MocOpenShift:
         self.resources.projects.create(body=project.dict(exclude_none=True))
         return project
 
-    def delete_project(self, name):
+    def delete_project(self, name: str) -> None:
         """Delete a project.
 
         This will raise an InvalidProjectError if an attempt is made to delete
@@ -139,7 +149,7 @@ class MocOpenShift:
         self.get_project(name)
         self.resources.projects.delete(name=name)
 
-    def group_exists(self, name):
+    def group_exists(self, name: str) -> bool:
         """Return True if a group exists, False otherwise"""
         try:
             self.get_group(name, unsafe=True)
@@ -148,7 +158,7 @@ class MocOpenShift:
         else:
             return True
 
-    def get_group(self, name, unsafe=False):
+    def get_group(self, name: str, unsafe: bool = False) -> models.Group:
         """Look up a group in OpenShift.
 
         Return a models.Group resource if it exists, otherwise raise a
@@ -156,14 +166,14 @@ class MocOpenShift:
         InvalidProjectError if the specified group exists but does not have
         the required label."""
         res = self.resources.groups.get(name=name)
-        group = models.Group.from_api(res)
+        group = cast(models.Group, models.Group.from_api(res))
 
         if not unsafe:
             check_if_safe(group)
 
         return group
 
-    def create_group(self, name, project_name):
+    def create_group(self, name: str, project_name: str) -> models.Group:
         """Create a new group"""
         self.logger.info("create group %s", name)
         if self.group_exists(name):
@@ -178,7 +188,7 @@ class MocOpenShift:
         self.resources.groups.create(body=group.dict(exclude_none=True))
         return group
 
-    def delete_group(self, name):
+    def delete_group(self, name: str) -> None:
         """Delete a group.
 
         This will raise an InvalidProjectError if an attempt is made to delete
@@ -191,8 +201,12 @@ class MocOpenShift:
             pass
 
     def create_project_bundle(
-        self, name, requester, display_name=None, description=None
-    ):
+        self,
+        name: str,
+        requester: str,
+        display_name: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> models.Project:
         """Create a project and associated resources.
 
         This will create:
@@ -213,7 +227,7 @@ class MocOpenShift:
 
         return project
 
-    def delete_project_bundle(self, name):
+    def delete_project_bundle(self, name: str) -> None:
         """Delete a project and associated resources"""
         self.logger.info("delete project bundle for %s", name)
 
@@ -224,7 +238,7 @@ class MocOpenShift:
 
         self.delete_project(name)
 
-    def user_exists(self, name):
+    def user_exists(self, name: str) -> bool:
         """Return True if a user exists, False otherwise"""
         try:
             self.get_user(name)
@@ -233,16 +247,16 @@ class MocOpenShift:
         else:
             return True
 
-    def get_user(self, name):
+    def get_user(self, name: str) -> models.User:
         """Look up a user in OpenShift.
 
         Return a models.User resource if it exists, otherwise raise a
         NotFoundError."""
         res = self.resources.users.get(name=name)
-        user = models.User.from_api(res)
+        user = cast(models.User, models.User.from_api(res))
         return user
 
-    def create_user(self, name, full_name=None):
+    def create_user(self, name: str, full_name: Optional[str] = None) -> models.User:
         """Create a new user"""
         self.logger.info("create user %s", name)
         user = models.User(
@@ -253,13 +267,15 @@ class MocOpenShift:
         self.resources.users.create(body=user.dict(exclude_none=True))
         return user
 
-    def delete_user(self, name):
+    def delete_user(self, name: str) -> None:
         """Delete a user"""
         self.logger.info("delete user %s", name)
         self.get_user(name)
         self.resources.users.delete(name=name)
 
-    def create_rolebinding(self, project, group, role):
+    def create_rolebinding(
+        self, project: str, group: str, role: str
+    ) -> models.RoleBinding:
         """Create a rolebinding in a project binding a group to a role"""
         self.logger.info("create rolebinding for project %s role %s", project, role)
         check_role_name(role)
@@ -287,32 +303,32 @@ class MocOpenShift:
         self.resources.rolebindings.create(body=rb.dict(exclude_none=True))
         return rb
 
-    def user_has_role(self, user, project, role):
+    def user_has_role(self, user: str, project: str, role: str) -> bool:
         """Return True if the user has the given role in a project"""
         check_role_name(role)
         group_name = make_group_name(project, role)
         res = self.resources.groups.get(name=group_name)
-        group = models.Group.from_api(res)
+        group = cast(models.Group, models.Group.from_api(res))
         try:
-            return user in group.users
+            return group.users is not None and user in group.users
         except TypeError:
             return False
 
-    def add_user_to_role(self, user, project, role):
+    def add_user_to_role(self, user: str, project: str, role: str) -> models.Group:
         """Grant a user the named role in a project"""
         self.logger.info("add user %s to role %s in project %s", user, role, project)
         check_role_name(role)
         group_name = make_group_name(project, role)
         res = self.resources.groups.get(name=group_name)
-        group = models.Group.from_api(res)
+        group = cast(models.Group, models.Group.from_api(res))
 
-        if user not in group.users:
+        if group.users is not None and user not in group.users:
             group.users.append(user)
             self.resources.groups.patch(body=group.dict(exclude_none=True))
 
         return group
 
-    def remove_user_from_role(self, user, project, role):
+    def remove_user_from_role(self, user: str, project: str, role: str) -> models.Group:
         """Revoke role for user in a project"""
         self.logger.info(
             "remove user %s from role %s in project %s", user, role, project
@@ -320,29 +336,30 @@ class MocOpenShift:
         check_role_name(role)
         group_name = make_group_name(project, role)
         res = self.resources.groups.get(name=group_name)
-        group = models.Group.from_api(res)
+        group = cast(models.Group, models.Group.from_api(res))
 
-        # If group.users is None we have nothing to do
         try:
-            group.users.remove(user)
+            if group.users is not None:
+                group.users.remove(user)
+                self.resources.groups.patch(body=group.dict(exclude_none=True))
         except ValueError:
+            # .remove raises a ValueError if the given string is not in the
+            # list (which means we don't need to make any changes).
             pass
-        else:
-            self.resources.groups.patch(body=group.dict(exclude_none=True))
 
         return group
 
-    def get_identity(self, name):
+    def get_identity(self, name: str) -> models.Identity:
         """Return an Identity for the given user.
 
         Raises a NotFoundError if the identity does not exist.
         """
         ident_name = self.qualify_user_name(name)
         res = self.resources.identities.get(name=ident_name)
-        ident = models.Identity.from_api(res)
+        ident = cast(models.Identity, models.Identity.from_api(res))
         return ident
 
-    def create_identity(self, name):
+    def create_identity(self, name: str) -> models.Identity:
         """Create a new identity for the given user.
 
         This creates an identity named {identity_provider}:{name} by
@@ -358,7 +375,7 @@ class MocOpenShift:
         self.resources.identities.create(body=ident.dict(exclude_none=True))
         return ident
 
-    def identity_exists(self, name):
+    def identity_exists(self, name: str) -> bool:
         """Return True if the given identity exists, False otherwise"""
         try:
             self.get_identity(name)
@@ -367,25 +384,28 @@ class MocOpenShift:
         else:
             return True
 
-    def delete_identity(self, name):
+    def delete_identity(self, name: str) -> None:
         """Delete identity for the given user"""
         self.logger.info("delete identity for %s", name)
         id_name = self.qualify_user_name(name)
         if self.identity_exists(name):
             self.resources.identities.delete(name=id_name)
 
-    def create_user_identity_mapping(self, name):
+    def create_user_identity_mapping(self, name: str) -> models.UserIdentityMapping:
         """Create a new UserIdentityMapping for the given user"""
         self.logger.info("create identity mapping for %s", name)
         ident_name = self.qualify_user_name(name)
         mapping = models.UserIdentityMapping(
+            metadata=None,
             user=models.IdentityUser(name=name),
             identity=models.IdentityUser(name=ident_name),
         )
         self.resources.useridentitymappings.create(body=mapping.dict(exclude_none=True))
         return mapping
 
-    def create_user_bundle(self, name, full_name=None):
+    def create_user_bundle(
+        self, name: str, full_name: Optional[str] = None
+    ) -> models.User:
         """Create a user and associated resources.
 
         This will create:
@@ -401,7 +421,7 @@ class MocOpenShift:
 
         return user
 
-    def remove_user_from_all_groups(self, name):
+    def remove_user_from_all_groups(self, name: str) -> None:
         """Remove a user from all managed groups"""
         self.logger.info("removing user %s from all groups", name)
         groups = self.resources.groups.get(label_selector="massopen.cloud/project")
@@ -417,18 +437,18 @@ class MocOpenShift:
             else:
                 self.resources.groups.patch(body=group.dict(exclude_none=True))
 
-    def delete_user_bundle(self, name):
+    def delete_user_bundle(self, name: str) -> None:
         """Delete a user and associated resources"""
         self.logger.info("delete user bundle for %s", name)
         self.delete_identity(name)
         self.remove_user_from_all_groups(name)
         self.delete_user(name)
 
-    def read_quota_file(self):
+    def read_quota_file(self) -> models.QuotaFile:
         """Read quota definitions"""
         return models.QuotaFile.parse_file(self.quota_file)
 
-    def get_resourcequota(self, project):
+    def get_resourcequota(self, project: str) -> models.ResourceQuotaList:
         """Get resourcequotas for a project"""
         self.logger.info("get resourcequotas in project %s", project)
         quotas = self.resources.resourcequotas.get(
@@ -436,7 +456,7 @@ class MocOpenShift:
         )
         return models.ResourceQuotaList.from_api(quotas)
 
-    def delete_resourcequota(self, project):
+    def delete_resourcequota(self, project: str) -> None:
         """Delete all resourcequotas in a project"""
         self.logger.info("deleting resourcequotas in project %s", project)
         quotas = self.get_resourcequota(project)
@@ -450,7 +470,9 @@ class MocOpenShift:
                 name=quota.metadata.name, namespace=project
             )
 
-    def generate_resourcequotas(self, project, multiplier):
+    def generate_resourcequotas(
+        self, project: str, multiplier: int
+    ) -> models.ResourceQuotaList:
         """Generate resourcequotas by applying multiplier to quota definition"""
         self.logger.info(
             "generating resourcequotas for project %s with multipler %d",
@@ -461,7 +483,7 @@ class MocOpenShift:
         # We read this for every request in case it changes while
         # the service is running.
         quotafile = self.read_quota_file()
-        quotas = models.ResourceQuotaList()
+        quotas = models.ResourceQuotaList(items=[])
         for scope, spec in quotafile.dict().items():
             if spec is None:
                 continue
@@ -477,7 +499,9 @@ class MocOpenShift:
 
         return quotas
 
-    def create_resourcequota(self, project, multiplier):
+    def create_resourcequota(
+        self, project: str, multiplier: int
+    ) -> models.ResourceQuotaList:
         """Create resourcequotas for a project"""
         self.logger.info(
             "creating resourcequotas for project %s with multiplier %d",
@@ -495,7 +519,9 @@ class MocOpenShift:
 
         return quotas
 
-    def update_resourcequota(self, project, multiplier):
+    def update_resourcequota(
+        self, project: str, multiplier: int
+    ) -> models.ResourceQuotaList:
         """Delete and re-create quotas"""
         self.delete_resourcequota(project)
         return self.create_resourcequota(project, multiplier)

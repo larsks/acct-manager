@@ -1,7 +1,11 @@
 """Pydantic models for the onboarding microservice API"""
 
+# https://www.python.org/dev/peps/pep-0563/
+from __future__ import annotations
+
+
 import re
-from typing import Optional, Union
+from typing import Optional, Union, Any
 
 import pydantic
 
@@ -19,10 +23,9 @@ class UserRequest(pydantic.BaseModel):
     name: str
     fullName: Optional[str]
 
+    # pylint: disable=no-self-use,no-self-argument,invalid-name
     @pydantic.validator("fullName", always=True)
-    def validate_fullName(
-        cls, value, values
-    ):  # pylint: disable=no-self-use,no-self-argument,invalid-name
+    def validate_fullName(cls, value: str, values: dict[str, Any]) -> str:
         """Default fullName to name if not provided"""
         if value is None:
             return values.get("name")
@@ -39,7 +42,7 @@ class ProjectRequest(pydantic.BaseModel):
     description: Optional[str]
 
 
-def remove_null_keys(value):
+def remove_null_keys(value: dict[str, str]) -> dict[str, str]:
     """Remove all keys with None values from dictionary"""
     to_delete = [k for k in value.keys() if value[k] is None]
     for k in to_delete:
@@ -55,28 +58,29 @@ class Metadata(pydantic.BaseModel):
     labels: Optional[dict[str, Union[str, None]]]
     annotations: Optional[dict[str, Union[str, None]]]
 
+    # pylint: disable=unused-argument,no-self-argument,no-self-use
     @pydantic.validator("labels")
     def validate_labels(
-        cls, value, values
-    ):  # pylint: disable=unused-argument,no-self-argument,no-self-use
+        cls, value: dict[str, str], values: dict[str, Any]
+    ) -> dict[str, str]:
         """Ensure that there are no null labels"""
         if value is not None:
             value = remove_null_keys(value)
         return value
 
+    # pylint: disable=unused-argument,no-self-argument,no-self-use
     @pydantic.validator("annotations")
     def validate_annotations(
-        cls, value, values
-    ):  # pylint: disable=unused-argument,no-self-argument,no-self-use
+        cls, value: dict[str, str], values: dict[str, Any]
+    ) -> dict[str, str]:
         """Ensure that there are no null annotations"""
         if value is not None:
             value = remove_null_keys(value)
         return value
 
+    # pylint: disable=unused-argument,no-self-argument,no-self-use
     @pydantic.validator("name")
-    def validate_name(
-        cls, name
-    ):  # pylint: disable=unused-argument,no-self-argument,no-self-use
+    def validate_name(cls, name: str) -> str:
         """Verify that name matches kubernetes naming requirements"""
         fixed_name = re.sub(r"[^\w:]+", "-", name, flags=re.ASCII).lower().strip("-")
         if name != fixed_name:
@@ -95,11 +99,18 @@ class Resource(pydantic.BaseModel):
 
     apiVersion: str
     kind: str
+    metadata: Metadata
 
     @classmethod
-    def from_api(cls, res):
+    def from_api(cls, res: Any) -> Resource:
         """Transform an API response to a model"""
         return cls(**res.to_dict())
+
+
+class NamespacedResource(Resource):
+    """A resource that requires a namespace"""
+
+    metadata: NamespacedMetadata
 
 
 class Project(Resource):
@@ -107,7 +118,6 @@ class Project(Resource):
 
     apiVersion: str = "project.openshift.io/v1"
     kind: str = "Project"
-    metadata: Metadata
 
 
 class Group(Resource):
@@ -115,13 +125,11 @@ class Group(Resource):
 
     apiVersion: str = "user.openshift.io/v1"
     kind: str = "Group"
-    metadata: Metadata
     users: Optional[list[str]]
 
+    # pylint: disable=unused-argument,no-self-argument,no-self-use
     @pydantic.validator("users")
-    def validate_users(
-        cls, value, values
-    ):  # pylint: disable=unused-argument,no-self-argument,no-self-use
+    def validate_users(cls, value: list[str], values: dict[str, Any]) -> list[str]:
         """Ensure that users is always a list.
 
         This simplifies code that wants to iterate over the list of
@@ -135,7 +143,6 @@ class User(Resource):
 
     apiVersion: str = "user.openshift.io/v1"
     kind: str = "User"
-    metadata: Metadata
     fullName: Optional[str]
     groups: Optional[list[str]]
     identities: Optional[list[str]]
@@ -157,7 +164,6 @@ class Identity(Resource):
 
     apiVersion: str = "user.openshift.io/v1"
     kind: str = "Identity"
-    metadata: Metadata
     extra: Optional[dict[str, str]]
     providerName: str
     providerUserName: str
@@ -192,12 +198,11 @@ class Subject(pydantic.BaseModel):
     name: str
 
 
-class RoleBinding(Resource):
+class RoleBinding(NamespacedResource):
     """An rbac.authorization.k8s.io/v1 RoleBinding"""
 
     apiVersion: str = "rbac.authorization.k8s.io/v1"
     kind: str = "RoleBinding"
-    metadata: NamespacedMetadata
     roleRef: RoleRef
     subjects: list[Subject]
 
@@ -206,13 +211,12 @@ class QuotaSpec(pydantic.BaseModel):
     """A single quota specification"""
 
     base: int
-    coefficient: int
+    coefficient: float
     units: Optional[str]
 
+    # pylint: disable=no-self-argument,unused-argument,no-self-use
     @pydantic.validator("coefficient")
-    def validate_coefficient(
-        cls, value, values
-    ):  # pylint: disable=no-self-argument,unused-argument,no-self-use
+    def validate_coefficient(cls, value: float, values: dict[str, Any]) -> float:
         """Ensure that coefficient is non-zero"""
         if value == 0:
             raise ValueError(value)
@@ -235,28 +239,32 @@ class ResourceQuotaSpec(pydantic.BaseModel):
     hard: Optional[dict[str, str]]
     scopes: Optional[list[str]]
 
+    # pylint: disable=no-self-argument,unused-argument,no-self-use
     @pydantic.validator("scopes")
-    def validate_scopes(
-        cls, value, values
-    ):  # pylint: disable=no-self-argument,unused-argument,no-self-use
+    def validate_scopes(cls, value: list[str], values: dict[str, Any]) -> list[str]:
         """Ensure that scope name is valid"""
         for scope in value:
             if scope not in VALID_SCOPE_NAMES:
                 raise ValueError(value)
 
-            return value
+        return value
 
 
-class ResourceQuota(Resource):
+class ResourceQuota(NamespacedResource):
     """A v1 ResourceQuota"""
 
     apiVersion: str = "v1"
     kind: str = "ResourceQuota"
-    metadata: NamespacedMetadata
     spec: ResourceQuotaSpec
 
     @classmethod
-    def from_quotaspec(cls, name, project, scope, quotaspec):
+    def from_quotaspec(
+        cls,
+        name: str,
+        project: str,
+        scope: Optional[str],
+        quotaspec: dict[str, str],
+    ) -> ResourceQuota:
         """Transform quota values into a ResourceQuota"""
         spec = ResourceQuotaSpec(
             hard=quotaspec,
@@ -273,12 +281,13 @@ class ResourceQuota(Resource):
 class ResourceQuotaList(pydantic.BaseModel):
     """A list of v1 ResourceQuotas"""
 
-    items: Optional[list[ResourceQuota]]
+    items: list[ResourceQuota]
 
+    # pylint: disable=no-self-argument,unused-argument,no-self-use
     @pydantic.validator("items", always=True)
     def validate_items(
-        cls, value, values
-    ):  # pylint: disable=no-self-argument,unused-argument,no-self-use
+        cls, value: list[ResourceQuota], values: dict[str, Any]
+    ) -> list[ResourceQuota]:
         """Ensure items is always a list (and never None)"""
         if value is None:
             value = []
@@ -286,7 +295,7 @@ class ResourceQuotaList(pydantic.BaseModel):
         return value
 
     @classmethod
-    def from_api(cls, quotalist):
+    def from_api(cls, quotalist: Any) -> ResourceQuotaList:
         """Create a ResourceQuotaList from a list of quotas"""
         return cls(items=[ResourceQuota(**dict(item)) for item in quotalist.items])
 
@@ -296,10 +305,9 @@ class QuotaRequest(pydantic.BaseModel):
 
     multiplier: int
 
+    # pylint: disable=no-self-argument,unused-argument,no-self-use
     @pydantic.validator("multiplier")
-    def validate_multiplier(
-        cls, value, values
-    ):  # pylint: disable=no-self-argument,unused-argument,no-self-use
+    def validate_multiplier(cls, value: int, values: dict[str, Any]) -> int:
         """Ensure that multiplier is non-zero"""
         if value == 0:
             raise ValueError(value)

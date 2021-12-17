@@ -2,6 +2,7 @@
 
 import functools
 import os
+from typing import Any, Callable, TypeVar, cast
 
 import flask
 import flask_httpauth
@@ -23,8 +24,12 @@ DEFAULTS = {
     "ENVVAR_PREFIX": "ACCT_MGR_",
 }
 
+# Support type annotation of decorators.
+# https://mypy.readthedocs.io/en/stable/generics.html#declaring-decorators
+TFunc = TypeVar("TFunc", bound=Callable[..., Any])
 
-def load_env_config(prefix):
+
+def load_env_config(prefix: str) -> dict[str, str]:
     """Load configuration from environment variables"""
 
     config = {}
@@ -38,7 +43,7 @@ def load_env_config(prefix):
     return config
 
 
-def load_kube_config():
+def load_kube_config() -> None:
     """Attempt to load the kubernetes config.
 
     First attempt to load the incluster configuration, and if that fails, try
@@ -49,18 +54,18 @@ def load_kube_config():
         kubernetes.config.load_kube_config()
 
 
-def get_openshift_client():
+def get_openshift_client() -> openshift.dynamic.DynamicClient:
     """Create and return an OpenShift API client"""
     load_kube_config()
     k8s_client = kubernetes.client.api_client.ApiClient()
     return openshift.dynamic.DynamicClient(k8s_client)
 
 
-def wrap_response(func):
+def wrap_response(func: TFunc) -> TFunc:
     """Convert returned models to dictionaries."""
 
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         res = func(*args, **kwargs)
 
         if hasattr(res, "dict"):
@@ -68,19 +73,19 @@ def wrap_response(func):
 
         return res
 
-    return wrapper
+    return cast(TFunc, wrapper)
 
 
-def handle_exceptions(func):
+def handle_exceptions(func: TFunc) -> TFunc:
     """Transform exceptions into HTTP error messages"""
 
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         status = 400
 
         try:
             return func(*args, **kwargs)
-        except moc_openshift.NotFoundError:
+        except exc.NotFoundError:
             message = models.Response(error=True, message="object not found")
             status = 404
         except (exc.ConflictError, exc.ObjectExistsError):
@@ -112,11 +117,11 @@ def handle_exceptions(func):
             message.json(exclude_none=True), status=status, mimetype="application/json"
         )
 
-    return wrapper
+    return cast(TFunc, wrapper)
 
 
 # pylint: disable=too-many-locals
-def create_app(**config):
+def create_app(**config: str) -> flask.Flask:
     """Create Flask application instance"""
 
     openshift_client = get_openshift_client()
@@ -143,20 +148,23 @@ def create_app(**config):
     )
 
     @auth.verify_password
-    def verify_password(username, password):
+    def verify_password(username: str, password: str) -> bool:
         """Validate user credentials.
 
         Return True when the request provides the appropriate username and password, or if
         AUTH_DISABLED is True. Return False otherwise.
         """
 
-        return app.config.get("AUTH_DISABLED") or (
-            username == app.config["ADMIN_USERNAME"]
-            and password == app.config["ADMIN_PASSWORD"]
+        return bool(
+            (app.config.get("AUTH_DISABLED", "").lower() == "true")
+            or (
+                username == app.config["ADMIN_USERNAME"]
+                and password == app.config["ADMIN_PASSWORD"]
+            )
         )
 
     @app.route("/healthz", methods=GET)
-    def healthcheck():
+    def healthcheck() -> flask.Response:
         """Healthcheck endpoint for asserting that service is running.
 
         Unlike all other methods, requests to this endpoint do not require
@@ -168,7 +176,7 @@ def create_app(**config):
     @auth.login_required
     @handle_exceptions
     @wrap_response
-    def create_user():
+    def create_user() -> models.UserResponse:
         req = models.UserRequest(**flask.request.json)
         user = moc.create_user_bundle(req.name, req.fullName)
         return models.UserResponse(
@@ -181,7 +189,7 @@ def create_app(**config):
     @auth.login_required
     @handle_exceptions
     @wrap_response
-    def get_user(name):
+    def get_user(name: str) -> models.UserResponse:
         user = moc.get_user(name)
         return models.UserResponse(
             error=False,
@@ -193,7 +201,7 @@ def create_app(**config):
     @auth.login_required
     @handle_exceptions
     @wrap_response
-    def delete_user(name):
+    def delete_user(name: str) -> models.Response:
         moc.delete_user_bundle(name)
         return models.Response(
             error=False,
@@ -204,7 +212,7 @@ def create_app(**config):
     @auth.login_required
     @handle_exceptions
     @wrap_response
-    def create_project():
+    def create_project() -> models.ProjectResponse:
         req = models.ProjectRequest(**flask.request.json)
         project = moc.create_project_bundle(
             req.name,
@@ -212,13 +220,17 @@ def create_app(**config):
             display_name=req.display_name,
             description=req.description,
         )
-        return project
+        return models.ProjectResponse(
+            error=False,
+            message=f"created project {project.metadata.name}",
+            project=project,
+        )
 
     @app.route("/projects/<name>", methods=GET)
     @auth.login_required
     @handle_exceptions
     @wrap_response
-    def get_project(name):
+    def get_project(name: str) -> models.ProjectResponse:
         project = moc.get_project(name)
         return models.ProjectResponse(
             error=False,
@@ -230,7 +242,7 @@ def create_app(**config):
     @auth.login_required
     @handle_exceptions
     @wrap_response
-    def delete_project(name):
+    def delete_project(name: str) -> models.Response:
         moc.delete_project_bundle(name)
         return models.Response(
             error=False,
@@ -243,7 +255,9 @@ def create_app(**config):
     @auth.login_required
     @handle_exceptions
     @wrap_response
-    def get_user_role(user_name, project_name, role_name):
+    def get_user_role(
+        user_name: str, project_name: str, role_name: str
+    ) -> models.RoleResponse:
         res = moc.user_has_role(user_name, project_name, role_name)
         return models.RoleResponse(
             error=False,
@@ -259,7 +273,9 @@ def create_app(**config):
     @auth.login_required
     @handle_exceptions
     @wrap_response
-    def add_user_role(user_name, project_name, role_name):
+    def add_user_role(
+        user_name: str, project_name: str, role_name: str
+    ) -> models.GroupResponse:
         group = moc.add_user_to_role(user_name, project_name, role_name)
         return models.GroupResponse(
             error=False,
@@ -273,7 +289,9 @@ def create_app(**config):
     @auth.login_required
     @handle_exceptions
     @wrap_response
-    def delete_user_role(user_name, project_name, role_name):
+    def delete_user_role(
+        user_name: str, project_name: str, role_name: str
+    ) -> models.GroupResponse:
         group = moc.remove_user_from_role(user_name, project_name, role_name)
         return models.GroupResponse(
             error=False,
@@ -285,7 +303,7 @@ def create_app(**config):
     @auth.login_required
     @handle_exceptions
     @wrap_response
-    def get_quota(project_name):
+    def get_quota(project_name: str) -> models.QuotaResponse:
         quotalist = moc.get_resourcequota(project_name)
         return models.QuotaResponse(
             error=False,
@@ -297,7 +315,7 @@ def create_app(**config):
     @auth.login_required
     @handle_exceptions
     @wrap_response
-    def update_quota(project_name):
+    def update_quota(project_name: str) -> models.QuotaResponse:
         qreq = models.QuotaRequest(**flask.request.json)
         quotalist = moc.update_resourcequota(project_name, qreq.multiplier)
         return models.QuotaResponse(
@@ -310,7 +328,7 @@ def create_app(**config):
     @auth.login_required
     @handle_exceptions
     @wrap_response
-    def delete_quota(project_name):
+    def delete_quota(project_name: str) -> models.Response:
         moc.delete_resourcequota(project_name)
         return models.Response(
             error=False, message=f"deleted quotas for project {project_name}"

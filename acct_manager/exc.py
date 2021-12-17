@@ -1,4 +1,7 @@
 """Exceptions raised by the acct_manager api"""
+
+from typing import Union, Any
+
 # pylint: disable=unused-import
 from pydantic.error_wrappers import ValidationError  # noqa
 
@@ -8,11 +11,13 @@ from kubernetes.client.exceptions import ApiException  # noqa
 # pylint: disable=unused-import
 from openshift.dynamic.exceptions import NotFoundError, ConflictError  # noqa
 
+from . import models
+
 
 class AccountManagerError(Exception):
     """Base class for all exceptions defined by this package"""
 
-    def __init__(self, *args, obj=None):
+    def __init__(self, *args: Any, obj: Union[None, models.Resource] = None) -> None:
         self.obj = obj
         super().__init__(*args)
 
