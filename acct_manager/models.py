@@ -7,7 +7,7 @@ from __future__ import annotations
 import re
 from typing import Optional, Union, Any
 
-import pydantic
+from pydantic import BaseModel, validator
 
 VALID_SCOPE_NAMES = (
     "Terminating",
@@ -17,14 +17,14 @@ VALID_SCOPE_NAMES = (
 )
 
 
-class UserRequest(pydantic.BaseModel):
+class UserRequest(BaseModel):
     """Request to create a user"""
 
     name: str
     fullName: Optional[str]
 
     # pylint: disable=no-self-use,no-self-argument,invalid-name
-    @pydantic.validator("fullName", always=True)
+    @validator("fullName", always=True)
     def validate_fullName(cls, value: str, values: dict[str, Any]) -> str:
         """Default fullName to name if not provided"""
         if value is None:
@@ -33,7 +33,7 @@ class UserRequest(pydantic.BaseModel):
         return value
 
 
-class ProjectRequest(pydantic.BaseModel):
+class ProjectRequest(BaseModel):
     """Request to create a project"""
 
     name: str
@@ -51,7 +51,7 @@ def remove_null_keys(value: dict[str, str]) -> dict[str, str]:
     return value
 
 
-class Metadata(pydantic.BaseModel):
+class Metadata(BaseModel):
     """Standard Kubernetes metadata"""
 
     name: str
@@ -59,7 +59,7 @@ class Metadata(pydantic.BaseModel):
     annotations: Optional[dict[str, Union[str, None]]]
 
     # pylint: disable=unused-argument,no-self-argument,no-self-use
-    @pydantic.validator("labels")
+    @validator("labels")
     def validate_labels(
         cls, value: dict[str, str], values: dict[str, Any]
     ) -> dict[str, str]:
@@ -69,7 +69,7 @@ class Metadata(pydantic.BaseModel):
         return value
 
     # pylint: disable=unused-argument,no-self-argument,no-self-use
-    @pydantic.validator("annotations")
+    @validator("annotations")
     def validate_annotations(
         cls, value: dict[str, str], values: dict[str, Any]
     ) -> dict[str, str]:
@@ -79,7 +79,7 @@ class Metadata(pydantic.BaseModel):
         return value
 
     # pylint: disable=unused-argument,no-self-argument,no-self-use
-    @pydantic.validator("name")
+    @validator("name")
     def validate_name(cls, name: str) -> str:
         """Verify that name matches kubernetes naming requirements"""
         fixed_name = re.sub(r"[^\w:]+", "-", name, flags=re.ASCII).lower().strip("-")
@@ -94,7 +94,7 @@ class NamespacedMetadata(Metadata):
     namespace: str
 
 
-class Resource(pydantic.BaseModel):
+class Resource(BaseModel):
     """Fields and methods common to all resources"""
 
     apiVersion: str
@@ -123,7 +123,7 @@ class Group(Resource):
     users: Optional[list[str]]
 
     # pylint: disable=unused-argument,no-self-argument,no-self-use
-    @pydantic.validator("users")
+    @validator("users")
     def validate_users(cls, value: list[str], values: dict[str, Any]) -> list[str]:
         """Ensure that users is always a list.
 
@@ -143,7 +143,7 @@ class User(Resource):
     identities: Optional[list[str]]
 
 
-class IdentityUser(pydantic.BaseModel):
+class IdentityUser(BaseModel):
     """A convenience class for identities and useridentitymappings"""
 
     name: Optional[str]
@@ -177,7 +177,7 @@ class UserIdentityMapping(Resource):
     identity: IdentityUser
 
 
-class RoleRef(pydantic.BaseModel):
+class RoleRef(BaseModel):
     """Role reference part of a [cluster-]rolebinding"""
 
     apiGroup: str
@@ -185,7 +185,7 @@ class RoleRef(pydantic.BaseModel):
     name: str
 
 
-class Subject(pydantic.BaseModel):
+class Subject(BaseModel):
     """Subject reference part of a [cluster-]rolebinding"""
 
     kind: str
@@ -202,7 +202,7 @@ class RoleBinding(NamespacedResource):
     subjects: list[Subject]
 
 
-class QuotaSpec(pydantic.BaseModel):
+class QuotaSpec(BaseModel):
     """A single quota specification"""
 
     base: int
@@ -210,7 +210,7 @@ class QuotaSpec(pydantic.BaseModel):
     units: Optional[str]
 
     # pylint: disable=no-self-argument,unused-argument,no-self-use
-    @pydantic.validator("coefficient")
+    @validator("coefficient")
     def validate_coefficient(cls, value: float, values: dict[str, Any]) -> float:
         """Ensure that coefficient is non-zero"""
         if value == 0:
@@ -218,7 +218,7 @@ class QuotaSpec(pydantic.BaseModel):
         return value
 
 
-class QuotaFile(pydantic.BaseModel):
+class QuotaFile(BaseModel):
     """Quota definition file"""
 
     Project: Optional[dict[str, QuotaSpec]]
@@ -228,14 +228,14 @@ class QuotaFile(pydantic.BaseModel):
     NotBestEffort: Optional[dict[str, QuotaSpec]]
 
 
-class ResourceQuotaSpec(pydantic.BaseModel):
+class ResourceQuotaSpec(BaseModel):
     """Spec for a v1 ResourceQuota"""
 
     hard: Optional[dict[str, str]]
     scopes: Optional[list[str]]
 
     # pylint: disable=no-self-argument,unused-argument,no-self-use
-    @pydantic.validator("scopes")
+    @validator("scopes")
     def validate_scopes(cls, value: list[str], values: dict[str, Any]) -> list[str]:
         """Ensure that scope name is valid"""
         for scope in value:
@@ -273,13 +273,13 @@ class ResourceQuota(NamespacedResource):
         )
 
 
-class ResourceQuotaList(pydantic.BaseModel):
+class ResourceQuotaList(BaseModel):
     """A list of v1 ResourceQuotas"""
 
     items: list[ResourceQuota]
 
     # pylint: disable=no-self-argument,unused-argument,no-self-use
-    @pydantic.validator("items", always=True)
+    @validator("items", always=True)
     def validate_items(
         cls, value: list[ResourceQuota], values: dict[str, Any]
     ) -> list[ResourceQuota]:
@@ -295,13 +295,13 @@ class ResourceQuotaList(pydantic.BaseModel):
         return cls(items=[ResourceQuota(**dict(item)) for item in quotalist.items])
 
 
-class QuotaRequest(pydantic.BaseModel):
+class QuotaRequest(BaseModel):
     """A quota request"""
 
     multiplier: int
 
     # pylint: disable=no-self-argument,unused-argument,no-self-use
-    @pydantic.validator("multiplier")
+    @validator("multiplier")
     def validate_multiplier(cls, value: int, values: dict[str, Any]) -> int:
         """Ensure that multiplier is non-zero"""
         if value == 0:
@@ -309,7 +309,7 @@ class QuotaRequest(pydantic.BaseModel):
         return value
 
 
-class Response(pydantic.BaseModel):
+class Response(BaseModel):
     """An API response object"""
 
     error: bool
@@ -334,7 +334,7 @@ class QuotaResponse(Response):
     quotas: ResourceQuotaList
 
 
-class RoleResponseData(pydantic.BaseModel):
+class RoleResponseData(BaseModel):
     """API response that contains role membership information"""
 
     user: str
