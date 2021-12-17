@@ -220,10 +220,17 @@ class MocOpenShift:
             name, requester, display_name=display_name, description=description
         )
 
-        for role in role_map:
-            group_name = f"{name}-{role}"
-            self.create_group(group_name, name)
-            self.create_rolebinding(name, group_name, role)
+        try:
+            for role in role_map:
+                group_name = f"{name}-{role}"
+                self.create_group(group_name, name)
+                self.create_rolebinding(name, group_name, role)
+        except Exception:
+            self.logger.error(
+                f"deleting project {name} due to failure creating groups or rolebinding"
+            )
+            self.delete_project_bundle(name)
+            raise
 
         return project
 
@@ -417,8 +424,16 @@ class MocOpenShift:
         self.logger.info("create user bundle for %s", name)
 
         user = self.create_user(name, full_name=full_name)
-        self.create_identity(name)
-        self.create_user_identity_mapping(name)
+
+        try:
+            self.create_identity(name)
+            self.create_user_identity_mapping(name)
+        except Exception:
+            self.logger.error(
+                f"deleting user {name} due to failure creating identity or mapping"
+            )
+            self.delete_user_bundle(name)
+            raise
 
         return user
 
