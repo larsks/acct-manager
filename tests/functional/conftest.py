@@ -1,6 +1,8 @@
+# pylint: disable=missing-class-docstring,missing-function-docstring,redefined-outer-name
+# type: ignore
+
 """Common fixtures for functional tests"""
 
-# pylint: disable=missing-class-docstring,missing-function-docstring,redefined-outer-name
 import os
 import random
 import string
@@ -20,11 +22,11 @@ dotenv.load_dotenv()
 
 
 class Session(requests.Session):
-    def __init__(self):
+    def __init__(self, endpoint=None, admin_password=None):
         super().__init__()
-        self.endpoint = os.environ["ACCT_MGR_API_ENDPOINT"]
+        self.endpoint = endpoint
         self.verify = False
-        self.auth = ("admin", os.environ["ACCT_MGR_ADMIN_PASSWORD"])
+        self.auth = ("admin", admin_password)
         self.headers["content-type"] = "application/json"
 
     # pylint: disable=arguments-differ
@@ -42,8 +44,18 @@ def suffix():
 
 
 @pytest.fixture
-def session():
-    return Session()
+def api_endpoint():
+    return os.environ.get("ACCT_MGR_API_ENDPOINT", "http://localhost:8080")
+
+
+@pytest.fixture
+def admin_password():
+    return os.environ.get("ACCT_MGR_ADMIN_PASSWORD", "secret")
+
+
+@pytest.fixture
+def session(api_endpoint, admin_password):
+    return Session(endpoint=api_endpoint, admin_password=admin_password)
 
 
 @pytest.fixture
