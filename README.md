@@ -153,7 +153,7 @@ Server: Werkzeug/2.0.2 Python/3.10.0
 }
 ```
 
-## Delete a user
+### Delete a user
 
 ```
 $ http --auth admin:secret DELETE localhost:8080/users/test-user
@@ -172,7 +172,7 @@ Server: Werkzeug/2.0.2 Python/3.10.0
 }
 ```
 
-## Create a project
+### Create a project
 
 ```
 $ http --auth admin:secret localhost:8080/projects name=test-project requester=test-user
@@ -199,3 +199,16 @@ Server: Werkzeug/2.0.2 Python/3.10.0
     }
 }
 ```
+
+## See also
+
+OpenShift documentation on quotas, limits, etc:
+
+- "[Resource quotas per project][1]"
+- "[Restrict resource consumption with limit ranges][2]"
+- "[Configuring your cluster to place pods on overcommitted nodes][3]"
+  (this is where the explanation of qos classes can be found)
+
+[1]: https://docs.openshift.com/container-platform/4.9/applications/quotas/quotas-setting-per-project.html
+[2]: https://docs.openshift.com/container-platform/4.9/nodes/clusters/nodes-cluster-limit-ranges.html
+[3]: https://docs.openshift.com/container-platform/4.9/nodes/clusters/nodes-cluster-overcommit.html
