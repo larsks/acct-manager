@@ -1,3 +1,6 @@
+[tool.pylint.MESSAGES_CONTROL]
+disable = 'invalid-name'
+
 [tool.mypy]
 mypy_path = './stubs'
 plugins = 'pydantic.mypy'
