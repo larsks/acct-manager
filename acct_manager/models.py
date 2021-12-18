@@ -36,6 +36,8 @@ def remove_null_keys(
 class UserRequest(BaseModel):
     """Request to create a user"""
 
+    _expose: bool = True
+
     name: str
     fullName: Optional[str]
 
@@ -51,6 +53,8 @@ class UserRequest(BaseModel):
 
 class ProjectRequest(BaseModel):
     """Request to create a project"""
+
+    _expose: bool = True
 
     name: str
     requester: str
@@ -94,6 +98,8 @@ class NamespacedResource(Resource):
 class Project(Resource):
     """A project.openshift.io/v1 Project"""
 
+    _expose: bool = True
+
     apiVersion: str = "project.openshift.io/v1"
     kind: str = "Project"
 
@@ -114,6 +120,8 @@ class Project(Resource):
 class Group(Resource):
     """A user.openshift.io/v1 Group"""
 
+    _expose: bool = True
+
     apiVersion: str = "user.openshift.io/v1"
     kind: str = "Group"
     users: Optional[list[str]]
@@ -123,6 +131,8 @@ class Group(Resource):
 
 class User(Resource):
     """A user.openshift.io/v1 User"""
+
+    _expose: bool = True
 
     apiVersion: str = "user.openshift.io/v1"
     kind: str = "User"
@@ -214,6 +224,8 @@ class ResourceQuotaSpec(BaseModel):
 class ResourceQuota(NamespacedResource):
     """A v1 ResourceQuota"""
 
+    _expose: bool = True
+
     apiVersion: str = "v1"
     kind: str = "ResourceQuota"
     spec: ResourceQuotaSpec
@@ -263,6 +275,8 @@ class LimitRangeSpec(BaseModel):
 class LimitRange(NamespacedResource):
     """A v1 LimitRange"""
 
+    _expose: bool = True
+
     apiVersion: str = "v1"
     kind: str = "LimitRange"
     metadata: NamespacedMetadata
@@ -294,6 +308,8 @@ class ResourceQuotaList(BaseModel):
 class QuotaRequest(BaseModel):
     """A quota request"""
 
+    _expose: bool = True
+
     multiplier: int
 
     # pylint: disable=no-self-argument,unused-argument,no-self-use
@@ -308,6 +324,8 @@ class QuotaRequest(BaseModel):
 class Response(BaseModel):
     """An API response object"""
 
+    _expose: bool = True
+
     error: bool
     message: Optional[str]
 
@@ -315,11 +333,15 @@ class Response(BaseModel):
 class ProjectResponse(Response):
     """API response that contains a project"""
 
+    _expose: bool = True
+
     project: Project
 
 
 class UserResponse(Response):
     """API response that contains a user"""
+
+    _expose: bool = True
 
     user: User
 
@@ -327,8 +349,10 @@ class UserResponse(Response):
 class QuotaResponse(Response):
     """API response that contains quota information"""
 
+    _expose: bool = True
+
     quotas: list[ResourceQuota]
-    limits: Optional[LimitRange]
+    limits: list[LimitRange]
 
 
 class RoleResponseData(BaseModel):
@@ -343,11 +367,15 @@ class RoleResponseData(BaseModel):
 class RoleResponse(Response):
     """Response when querying if user has a given role in project"""
 
+    _expose: bool = True
+
     role: RoleResponseData
 
 
 class GroupResponse(Response):
     """API response that contains a group"""
+
+    _expose: bool = True
 
     group: Group
 
@@ -393,6 +421,8 @@ class QFQuotaSpec(BaseModel):
 
 class QuotaFile(BaseModel):
     """Quota definition file"""
+
+    _expose: bool = True
 
     quotas: Optional[list[QFQuotaSpec]]
     limits: Optional[list[QFLimitSpec]]
