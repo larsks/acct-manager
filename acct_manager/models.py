@@ -1,4 +1,8 @@
-"""Pydantic models for the onboarding microservice API"""
+"""Pydantic models for the onboarding microservice API
+
+Models marked with `_expose = True` are public facing models that will be
+published in the OpenAPI schema.
+"""
 
 # https://www.python.org/dev/peps/pep-0563/
 from __future__ import annotations
@@ -90,7 +94,7 @@ class Resource(BaseModel):
 
 
 class NamespacedResource(Resource):
-    """A resource that requires a namespace"""
+    """A Resource that requires a namespace"""
 
     metadata: NamespacedMetadata
 
@@ -283,28 +287,6 @@ class LimitRange(NamespacedResource):
     spec: LimitRangeSpec
 
 
-class ResourceQuotaList(BaseModel):
-    """A list of v1 ResourceQuotas"""
-
-    items: list[ResourceQuota]
-
-    # pylint: disable=no-self-argument,unused-argument,no-self-use
-    @validator("items", always=True)
-    def validate_items(
-        cls, value: list[ResourceQuota], values: dict[str, Any]
-    ) -> list[ResourceQuota]:
-        """Ensure items is always a list (and never None)"""
-        if value is None:
-            value = []
-
-        return value
-
-    @classmethod
-    def from_api(cls, quotalist: Any) -> ResourceQuotaList:
-        """Create a ResourceQuotaList from a list of quotas"""
-        return cls(items=[ResourceQuota(**dict(item)) for item in quotalist.items])
-
-
 class QuotaRequest(BaseModel):
     """A quota request"""
 
@@ -381,7 +363,7 @@ class GroupResponse(Response):
 
 
 class ScaledValue(BaseModel):
-    """Represented a value that can be scaled by a multiplier"""
+    """Represents a value that can be scaled by a multiplier"""
 
     base: int
     coefficient: float
