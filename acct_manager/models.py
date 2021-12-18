@@ -7,7 +7,7 @@ import enum
 import re
 from typing import Optional, Union, Any
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, root_validator
 
 VALID_SCOPE_NAMES = (
     "Terminating",
@@ -78,15 +78,6 @@ class Metadata(BaseModel):
             value = remove_null_keys(value)
         return value
 
-    # pylint: disable=unused-argument,no-self-argument,no-self-use
-    @validator("name")
-    def validate_name(cls, name: str) -> str:
-        """Verify that name matches kubernetes naming requirements"""
-        fixed_name = re.sub(r"[^\w:]+", "-", name, flags=re.ASCII).lower().strip("-")
-        if name != fixed_name:
-            raise ValueError(name)
-        return name
-
 
 class NamespacedMetadata(Metadata):
     """Standard Kubernetes metadata for a namespaced object"""
@@ -113,6 +104,19 @@ class Project(Resource):
 
     apiVersion: str = "project.openshift.io/v1"
     kind: str = "Project"
+
+    # pylint: disable=unused-argument,no-self-argument,no-self-use
+    @root_validator
+    def validate_name(cls, values: dict[Any, Any]) -> dict[Any, Any]:
+        """Verify that project name matches kubernetes naming requirements"""
+        fixed_name = (
+            re.sub(r"[^\w]+", "-", values["metadata"].name, flags=re.ASCII)
+            .lower()
+            .strip("-")
+        )
+        if values["metadata"].name != fixed_name:
+            raise ValueError(values["metadata"].name)
+        return values
 
 
 class Group(Resource):
