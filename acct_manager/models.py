@@ -10,11 +10,25 @@ from typing import Optional, Union, Any
 from pydantic import BaseModel, validator, root_validator
 
 
-def remove_null_keys(value: dict[str, str]) -> dict[str, str]:
+# pylint: disable=unused-argument
+def ensure_list(
+    cls: BaseModel, value: Optional[list[Any]], values: dict[Any, Any]
+) -> list[Any]:
+    """Ensure an optional list returns an empty list instead of None"""
+    if value is None:
+        value = []
+    return value
+
+
+# pylint: disable=unused-argument
+def remove_null_keys(
+    cls: BaseModel, value: Optional[dict[str, str]], values: dict[Any, Any]
+) -> Optional[dict[str, str]]:
     """Remove all keys with None values from dictionary"""
-    to_delete = [k for k in value.keys() if value[k] is None]
-    for k in to_delete:
-        del value[k]
+    if value is not None:
+        to_delete = [k for k in value.keys() if value[k] is None]
+        for k in to_delete:
+            del value[k]
 
     return value
 
@@ -30,7 +44,7 @@ class UserRequest(BaseModel):
     def validate_fullName(cls, value: str, values: dict[str, Any]) -> str:
         """Default fullName to name if not provided"""
         if value is None:
-            return values.get("name")
+            value = values.get("name")
 
         return value
 
@@ -51,25 +65,10 @@ class Metadata(BaseModel):
     labels: Optional[dict[str, Union[str, None]]]
     annotations: Optional[dict[str, Union[str, None]]]
 
-    # pylint: disable=unused-argument,no-self-argument,no-self-use
-    @validator("labels")
-    def validate_labels(
-        cls, value: dict[str, str], values: dict[str, Any]
-    ) -> dict[str, str]:
-        """Ensure that there are no null labels"""
-        if value is not None:
-            value = remove_null_keys(value)
-        return value
-
-    # pylint: disable=unused-argument,no-self-argument,no-self-use
-    @validator("annotations")
-    def validate_annotations(
-        cls, value: dict[str, str], values: dict[str, Any]
-    ) -> dict[str, str]:
-        """Ensure that there are no null annotations"""
-        if value is not None:
-            value = remove_null_keys(value)
-        return value
+    _remove_null_keys_labels = validator("labels", allow_reuse=True)(remove_null_keys)
+    _remove_null_keys_annotations = validator("annotations", allow_reuse=True)(
+        remove_null_keys
+    )
 
 
 class NamespacedMetadata(Metadata):
@@ -119,15 +118,7 @@ class Group(Resource):
     kind: str = "Group"
     users: Optional[list[str]]
 
-    # pylint: disable=unused-argument,no-self-argument,no-self-use
-    @validator("users")
-    def validate_users(cls, value: list[str], values: dict[str, Any]) -> list[str]:
-        """Ensure that users is always a list.
-
-        This simplifies code that wants to iterate over the list of
-        users in a group.
-        """
-        return value if value else []
+    _ensure_list_users = validator("users", allow_reuse=True, always=True)(ensure_list)
 
 
 class User(Resource):
@@ -262,7 +253,11 @@ class LimitDef(BaseModel):
 class LimitRangeSpec(BaseModel):
     """Spec portion of a v1 LimitRange"""
 
-    limits: list[LimitDef]
+    limits: Optional[list[LimitDef]]
+
+    _ensure_list_limits = validator("limits", allow_reuse=True, always=True)(
+        ensure_list
+    )
 
 
 class LimitRange(NamespacedResource):
@@ -399,5 +394,12 @@ class QFQuotaSpec(BaseModel):
 class QuotaFile(BaseModel):
     """Quota definition file"""
 
-    quotas: list[QFQuotaSpec]
-    limits: list[QFLimitSpec]
+    quotas: Optional[list[QFQuotaSpec]]
+    limits: Optional[list[QFLimitSpec]]
+
+    _ensure_list_quotas = validator("quotas", allow_reuse=True, always=True)(
+        ensure_list
+    )
+    _ensure_list_limits = validator("limits", allow_reuse=True, always=True)(
+        ensure_list
+    )
