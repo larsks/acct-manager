@@ -1,67 +1,112 @@
 {
-  "Project": {
-    "memory": {
-      "base": 1,
-      "coefficient": 1,
-      "units": "Gi"
+  "limits": [
+    {
+      "type": "Container",
+      "default": {
+        "cpu": {
+          "base": 500,
+          "coefficient": 1,
+          "units": "m"
+        },
+        "memory": {
+          "base": 512,
+          "coefficient": 1,
+          "units": "Mi"
+        }
+      }
     },
-    "persistentvolumeclaims": {
-      "base": 2,
-      "coefficient": 1
-    },
-    "requests.storage": {
-      "base": 2,
-      "coefficient": 1,
-      "units": "Gi"
-    },
-    "requests.ephemeral-storage": {
-      "base": 2,
-      "coefficient": 1,
-      "units": "Gi"
-    },
-    "limits.ephemeral-storage": {
-      "base": 2,
-      "coefficient": 1,
-      "units": "Gi"
-    },
-    "replicationcontrollers": {
-      "base": 2,
-      "coefficient": 1
-    },
-    "resourcequotas": {
-      "base": 5,
-      "coefficient": 1
-    },
-    "services": {
-      "base": 4,
-      "coefficient": 1
-    },
-    "services.loadbalancers": {
-      "base": 2,
-      "coefficient": 1
-    },
-    "services.nodeports": {
-      "base": 2,
-      "coefficient": 1
-    },
-    "secrets": {
-      "base": 4,
-      "coefficient": 1
-    },
-    "configmaps": {
-      "base": 4,
-      "coefficient": 1
-    },
-    "openshift.io/imagestreams": {
-      "base": 2,
-      "coefficient": 1
+    {
+      "type": "Pod",
+      "max": {
+        "cpu": {
+          "base": 1000,
+          "coefficient": 1,
+          "units": "m"
+        },
+        "memory": {
+          "base": 1024,
+          "coefficient": 1,
+          "units": "Mi"
+        }
+      }
     }
-  },
-  "Terminating": {
-    "memory": {
-      "base": 4,
-      "coefficient": 1,
-      "units": "Gi"
+  ],
+  "quotas": [
+    {
+      "scopes": [
+        "Project"
+      ],
+      "values": {
+        "memory": {
+          "base": 1,
+          "coefficient": 1,
+          "units": "Gi"
+        },
+        "persistentvolumeclaims": {
+          "base": 2,
+          "coefficient": 1
+        },
+        "requests.storage": {
+          "base": 2,
+          "coefficient": 1,
+          "units": "Gi"
+        },
+        "requests.ephemeral-storage": {
+          "base": 2,
+          "coefficient": 1,
+          "units": "Gi"
+        },
+        "limits.ephemeral-storage": {
+          "base": 2,
+          "coefficient": 1,
+          "units": "Gi"
+        },
+        "replicationcontrollers": {
+          "base": 2,
+          "coefficient": 1
+        },
+        "resourcequotas": {
+          "base": 5,
+          "coefficient": 1
+        },
+        "services": {
+          "base": 4,
+          "coefficient": 1
+        },
+        "services.loadbalancers": {
+          "base": 2,
+          "coefficient": 1
+        },
+        "services.nodeports": {
+          "base": 2,
+          "coefficient": 1
+        },
+        "secrets": {
+          "base": 4,
+          "coefficient": 1
+        },
+        "configmaps": {
+          "base": 4,
+          "coefficient": 1
+        },
+        "openshift.io/imagestreams": {
+          "base": 2,
+          "coefficient": 1
+        }
+      }
+    },
+    {
+      "scopes": [
+        "Terminating",
+        "NotBestEffort"
+      ],
+      "values": {
+        "memory": {
+          "base": 4,
+          "coefficient": 1,
+          "units": "Gi"
+        }
+      }
     }
-  }
+  ]
 }
