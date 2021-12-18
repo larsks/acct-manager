@@ -326,11 +326,13 @@ def create_app(**config: str) -> flask.Flask:
     @handle_exceptions
     @wrap_response
     def get_quota(project_name: str) -> models.QuotaResponse:
-        quotalist = moc.get_resourcequota(project_name)
+        quotas = moc.get_resourcequota(project_name)
+        limits = moc.get_limitrange(project_name)
         return models.QuotaResponse(
             error=False,
             msg=f"quotas for project {project_name}",
-            quotas=quotalist,
+            quotas=quotas,
+            limits=limits,
         )
 
     @app.route("/projects/<project_name>/quotas", methods=PUT)
@@ -339,11 +341,12 @@ def create_app(**config: str) -> flask.Flask:
     @wrap_response
     def update_quota(project_name: str) -> models.QuotaResponse:
         qreq = models.QuotaRequest(**flask.request.json)
-        quotalist = moc.update_resourcequota(project_name, qreq.multiplier)
+        quotas, limits = moc.update_resourcequota(project_name, qreq.multiplier)
         return models.QuotaResponse(
             error=False,
             msg=f"updated quotas for project {project_name}",
-            quotas=quotalist,
+            quotas=quotas,
+            limits=limits,
         )
 
     @app.route("/projects/<project_name>/quotas", methods=DELETE)
