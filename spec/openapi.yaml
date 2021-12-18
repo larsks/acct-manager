@@ -23,6 +23,8 @@ paths:
       Health check endpoint; this endpoint does not require authentication.
     get:
       operationId: healthcheck
+      tags:
+        - healthcheck
       summary: Check service health
       responses:
         "200":
