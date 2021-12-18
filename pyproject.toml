@@ -1,5 +1,5 @@
 [tool.pylint.MESSAGES_CONTROL]
-disable = 'invalid-name'
+disable = 'invalid-name,too-few-public-methods'
 
 [tool.mypy]
 mypy_path = './stubs'

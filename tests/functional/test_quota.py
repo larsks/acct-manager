@@ -46,7 +46,7 @@ def test_quota(session, a_project, ocp_api):
     res = session.get(url)
     assert res.status_code == 200
     data = res.json()
-    assert data["quotas"]["items"] == []
+    assert data["quotas"] == []
 
     # this should succeed because there is no quota in place
     create_configmaps(ocp_api, a_project, 10)
@@ -61,7 +61,7 @@ def test_quota(session, a_project, ocp_api):
     res = session.get(url)
     assert res.status_code == 200
     data = res.json()
-    assert len(data["quotas"]["items"]) >= 1
+    assert len(data["quotas"]) >= 1
 
     # attempt to violate quota
     with pytest.raises(ForbiddenError):
@@ -75,4 +75,4 @@ def test_quota(session, a_project, ocp_api):
     # check that quotas have been deleted
     assert res.status_code == 200
     data = res.json()
-    assert data["quotas"]["items"] == []
+    assert data["quotas"] == []

@@ -9,7 +9,11 @@ from pydantic.error_wrappers import ValidationError  # noqa
 from kubernetes.client.exceptions import ApiException  # noqa
 
 # pylint: disable=unused-import
-from openshift.dynamic.exceptions import NotFoundError, ConflictError  # noqa
+from openshift.dynamic.exceptions import (  # noqa: F401
+    NotFoundError,
+    ConflictError,
+    ForbiddenError,
+)
 
 from . import models
 

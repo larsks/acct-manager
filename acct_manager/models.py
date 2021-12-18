@@ -9,12 +9,14 @@ from typing import Optional, Union, Any
 
 from pydantic import BaseModel, validator, root_validator
 
-VALID_SCOPE_NAMES = (
-    "Terminating",
-    "NotTerminating",
-    "BestEffort",
-    "NotBestEffort",
-)
+
+def remove_null_keys(value: dict[str, str]) -> dict[str, str]:
+    """Remove all keys with None values from dictionary"""
+    to_delete = [k for k in value.keys() if value[k] is None]
+    for k in to_delete:
+        del value[k]
+
+    return value
 
 
 class UserRequest(BaseModel):
@@ -40,15 +42,6 @@ class ProjectRequest(BaseModel):
     requester: str
     display_name: Optional[str]
     description: Optional[str]
-
-
-def remove_null_keys(value: dict[str, str]) -> dict[str, str]:
-    """Remove all keys with None values from dictionary"""
-    to_delete = [k for k in value.keys() if value[k] is None]
-    for k in to_delete:
-        del value[k]
-
-    return value
 
 
 class Metadata(BaseModel):
@@ -255,30 +248,30 @@ class ResourceQuota(NamespacedResource):
         )
 
 
-class QuotaSpec(BaseModel):
-    """A single quota specification"""
+class LimitDef(BaseModel):
+    """Defines limits for a single type"""
 
-    base: int
-    coefficient: float
-    units: Optional[str]
-
-    # pylint: disable=no-self-argument,unused-argument,no-self-use
-    @validator("coefficient")
-    def validate_coefficient(cls, value: float, values: dict[str, Any]) -> float:
-        """Ensure that coefficient is non-zero"""
-        if value == 0:
-            raise ValueError(value)
-        return value
+    type: str
+    max: Optional[dict[str, str]]
+    min: Optional[dict[str, str]]
+    default: Optional[dict[str, str]]
+    defaultRequest: Optional[dict[str, str]]
+    maxLimitRequestRatio: Optional[dict[str, str]]
 
 
-class QuotaFile(BaseModel):
-    """Quota definition file"""
+class LimitRangeSpec(BaseModel):
+    """Spec portion of a v1 LimitRange"""
 
-    Project: Optional[dict[str, QuotaSpec]]
-    Terminating: Optional[dict[str, QuotaSpec]]
-    NotTerminating: Optional[dict[str, QuotaSpec]]
-    BestEffort: Optional[dict[str, QuotaSpec]]
-    NotBestEffort: Optional[dict[str, QuotaSpec]]
+    limits: list[LimitDef]
+
+
+class LimitRange(NamespacedResource):
+    """A v1 LimitRange"""
+
+    apiVersion: str = "v1"
+    kind: str = "LimitRange"
+    metadata: NamespacedMetadata
+    spec: LimitRangeSpec
 
 
 class ResourceQuotaList(BaseModel):
@@ -339,7 +332,8 @@ class UserResponse(Response):
 class QuotaResponse(Response):
     """API response that contains quota information"""
 
-    quotas: ResourceQuotaList
+    quotas: list[ResourceQuota]
+    limits: Optional[LimitRange]
 
 
 class RoleResponseData(BaseModel):
@@ -364,14 +358,46 @@ class GroupResponse(Response):
 
 
 class ScaledValue(BaseModel):
+    """Represented a value that can be scaled by a multiplier"""
+
     base: int
     coefficient: float
-    units: str
+    units: Optional[str]
 
     def resolve(self, multiplier: int = 1) -> str:
+        """Convert base, coefficient, and multiplier into a value.
+
+        If coefficient is 0, base is used unmodified. Otherwise the value
+        is base * coefficient * multiplier."""
         if self.coefficient == 0:
             value = self.base
         else:
             value = round(self.base * self.coefficient * multiplier)
 
-        return f"{value}{self.units}"
+        units = self.units if self.units else ""
+        return f"{value}{units}"
+
+
+class QFLimitSpec(BaseModel):
+    """Limit specification"""
+
+    type: str
+    max: Optional[dict[str, ScaledValue]]
+    min: Optional[dict[str, ScaledValue]]
+    default: Optional[dict[str, ScaledValue]]
+    defaultRequest: Optional[dict[str, ScaledValue]]
+    maxLimitRequestRatio: Optional[dict[str, ScaledValue]]
+
+
+class QFQuotaSpec(BaseModel):
+    """Quota specification"""
+
+    scopes: list[Scope]
+    values: dict[str, ScaledValue]
+
+
+class QuotaFile(BaseModel):
+    """Quota definition file"""
+
+    quotas: list[QFQuotaSpec]
+    limits: list[QFLimitSpec]

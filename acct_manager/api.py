@@ -91,6 +91,11 @@ def handle_exceptions(func: TFunc) -> TFunc:
         except (exc.ConflictError, exc.ObjectExistsError):
             message = models.Response(error=True, message="object already exists")
             status = 409
+        except exc.ForbiddenError:
+            message = models.Response(
+                error=True, message="openshift authentication failed"
+            )
+            status = 403
         except exc.InvalidProjectError as err:
             flask.current_app.logger.warning(
                 "attempt to operate on invalid object: %s", err.obj
