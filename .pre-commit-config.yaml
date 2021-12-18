@@ -17,3 +17,4 @@ repos:
         exclude: '^test'
         additional_dependencies:
           - pydantic
+          - types-PyYAML
