@@ -464,6 +464,7 @@ class MocOpenShift:
 
     def read_quota_file(self) -> None:
         """Read quota definitions"""
+        self.logger.info("reading quotas from %s", self.quota_file)
         self.quotas = models.QuotaFile.parse_file(self.quota_file)
 
     def get_limitrange(self, project: str) -> list[models.LimitRange]:
@@ -510,9 +511,7 @@ class MocOpenShift:
                 name=quota.metadata.name, namespace=project
             )
 
-    def generate_limitranges(
-        self, project: str, multiplier: int
-    ) -> list[models.LimitRange]:
+    def generate_limitranges(self, project: str, multiplier: int) -> models.LimitRange:
         """Generate limitranges by applying multipllier to limit definition"""
         self.logger.info(
             "generating limitranges for project %s with multipler %d",
@@ -520,37 +519,29 @@ class MocOpenShift:
             multiplier,
         )
 
-        resources = []
+        all_limits: list[models.LimitDef] = []
         for limit in self.quotas.limits:
-            limitname = f"{project}-limit-{limit.type}".lower()
-            values = models.LimitDef(type=limit.type)
-
-            for what, limits in dict(limit).items():
-                if what == "type":
+            limitdef = models.LimitDef(type=limit.type)
+            for cat, values in dict(limit).items():
+                if cat == "type":
                     continue
-                if limits is None:
+                if values is None:
                     continue
 
-                setattr(values, what, {})
-                target = getattr(values, what)
+                resolved = {k: v.resolve(multiplier) for k, v in values.items()}
+                setattr(limitdef, cat, resolved)
+                all_limits.append(limitdef)
 
-                for res, value in limits.items():
-                    target[res] = value.resolve(multiplier)
-
-            resources.append(
-                models.LimitRange(
-                    metadata=models.NamespacedMetadata(
-                        name=limitname,
-                        namespace=project,
-                        labels={"massopen.cloud/project": project},
-                    ),
-                    spec=models.LimitRangeSpec(
-                        limits=[values],
-                    ),
-                )
-            )
-
-        return resources
+        return models.LimitRange(
+            metadata=models.NamespacedMetadata(
+                name=f"{project}-limits",
+                namespace=project,
+                labels={"massopen.cloud/project": project},
+            ),
+            spec=models.LimitRangeSpec(
+                limits=all_limits,
+            ),
+        )
 
     def generate_resourcequotas(
         self, project: str, multiplier: int
@@ -615,13 +606,7 @@ class MocOpenShift:
             )
             self.resources.resourcequotas.create(body=quota.dict(exclude_none=True))
 
-        for limit in limits:
-            self.logger.debug(
-                "creating limitrange %s for project %s",
-                limit.metadata.name,
-                project,
-            )
-            self.resources.limitranges.create(body=limit.dict(exclude_none=True))
+        self.resources.limitranges.create(body=limits.dict(exclude_none=True))
 
         return quotas
 
