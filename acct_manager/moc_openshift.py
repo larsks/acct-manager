@@ -1,7 +1,7 @@
 """Python API for interesting with OpenShift"""
 import logging
 from types import SimpleNamespace
-from typing import Any, Optional
+from typing import Any, Optional, Tuple, cast
 
 # pylint: disable=unused-import
 from kubernetes.client.exceptions import ApiException  # noqa: F401
@@ -520,7 +520,7 @@ class MocOpenShift:
         )
 
         all_limits: list[models.LimitDef] = []
-        for limit in self.quotas.limits:
+        for limit in cast(list[models.QFLimitSpec], self.quotas.limits):
             limitdef = models.LimitDef(type=limit.type)
             for cat, values in dict(limit).items():
                 if cat == "type":
@@ -554,7 +554,7 @@ class MocOpenShift:
         )
 
         resources = []
-        for quota in self.quotas.quotas:
+        for quota in cast(list[models.QFQuotaSpec], self.quotas.quotas):
             scopes = [
                 scope.value for scope in quota.scopes if scope != models.Scope.Project
             ]
@@ -583,10 +583,10 @@ class MocOpenShift:
 
     def create_resourcequota(
         self, project: str, multiplier: int
-    ) -> list[models.ResourceQuota]:
+    ) -> Tuple[list[models.ResourceQuota], list[models.LimitRange]]:
         """Create resourcequotas for a project"""
         self.logger.info(
-            "creating resourcequotas for project %s with multiplier %d",
+            "creating resourcequotas and limits for project %s with multiplier %d",
             project,
             multiplier,
         )
@@ -606,13 +606,16 @@ class MocOpenShift:
             )
             self.resources.resourcequotas.create(body=quota.dict(exclude_none=True))
 
+        self.logger.debug(
+            "creating limitrange %s for project %s", limits.metadata.name, project
+        )
         self.resources.limitranges.create(body=limits.dict(exclude_none=True))
 
-        return quotas
+        return quotas, [limits]
 
     def update_resourcequota(
         self, project: str, multiplier: int
-    ) -> list[models.ResourceQuota]:
+    ) -> Tuple[list[models.ResourceQuota], list[models.LimitRange]]:
         """Delete and re-create quotas"""
         self.delete_resourcequota(project)
         self.delete_limitrange(project)
