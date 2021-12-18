@@ -62,6 +62,7 @@ def test_quota(session, a_project, ocp_api):
     assert res.status_code == 200
     data = res.json()
     assert len(data["quotas"]) >= 1
+    assert len(data["limits"]) >= 1
 
     # attempt to violate quota
     with pytest.raises(ForbiddenError):
