@@ -3,7 +3,7 @@
 # https://www.python.org/dev/peps/pep-0563/
 from __future__ import annotations
 
-
+import enum
 import re
 from typing import Optional, Union, Any
 
@@ -202,47 +202,25 @@ class RoleBinding(NamespacedResource):
     subjects: list[Subject]
 
 
-class QuotaSpec(BaseModel):
-    """A single quota specification"""
+class Scope(str, enum.Enum):
+    """Valid quota scope values"""
 
-    base: int
-    coefficient: float
-    units: Optional[str]
-
-    # pylint: disable=no-self-argument,unused-argument,no-self-use
-    @validator("coefficient")
-    def validate_coefficient(cls, value: float, values: dict[str, Any]) -> float:
-        """Ensure that coefficient is non-zero"""
-        if value == 0:
-            raise ValueError(value)
-        return value
-
-
-class QuotaFile(BaseModel):
-    """Quota definition file"""
-
-    Project: Optional[dict[str, QuotaSpec]]
-    Terminating: Optional[dict[str, QuotaSpec]]
-    NotTerminating: Optional[dict[str, QuotaSpec]]
-    BestEffort: Optional[dict[str, QuotaSpec]]
-    NotBestEffort: Optional[dict[str, QuotaSpec]]
+    Project = "Project"
+    BestEffort = "BestEffort"
+    NotBestEffort = "NotBestEffort"
+    Terminating = "Terminating"
+    NotTerminating = "NotTerminating"
 
 
 class ResourceQuotaSpec(BaseModel):
     """Spec for a v1 ResourceQuota"""
 
+    # pylint: disable=missing-class-docstring
+    class Config:
+        use_enum_values = True
+
     hard: Optional[dict[str, str]]
-    scopes: Optional[list[str]]
-
-    # pylint: disable=no-self-argument,unused-argument,no-self-use
-    @validator("scopes")
-    def validate_scopes(cls, value: list[str], values: dict[str, Any]) -> list[str]:
-        """Ensure that scope name is valid"""
-        for scope in value:
-            if scope not in VALID_SCOPE_NAMES:
-                raise ValueError(value)
-
-        return value
+    scopes: Optional[list[Scope]]
 
 
 class ResourceQuota(NamespacedResource):
@@ -271,6 +249,32 @@ class ResourceQuota(NamespacedResource):
             ),
             spec=spec,
         )
+
+
+class QuotaSpec(BaseModel):
+    """A single quota specification"""
+
+    base: int
+    coefficient: float
+    units: Optional[str]
+
+    # pylint: disable=no-self-argument,unused-argument,no-self-use
+    @validator("coefficient")
+    def validate_coefficient(cls, value: float, values: dict[str, Any]) -> float:
+        """Ensure that coefficient is non-zero"""
+        if value == 0:
+            raise ValueError(value)
+        return value
+
+
+class QuotaFile(BaseModel):
+    """Quota definition file"""
+
+    Project: Optional[dict[str, QuotaSpec]]
+    Terminating: Optional[dict[str, QuotaSpec]]
+    NotTerminating: Optional[dict[str, QuotaSpec]]
+    BestEffort: Optional[dict[str, QuotaSpec]]
+    NotBestEffort: Optional[dict[str, QuotaSpec]]
 
 
 class ResourceQuotaList(BaseModel):
@@ -353,3 +357,17 @@ class GroupResponse(Response):
     """API response that contains a group"""
 
     group: Group
+
+
+class ScaledValue(BaseModel):
+    base: int
+    coefficient: float
+    units: str
+
+    def resolve(self, multiplier: int = 1) -> str:
+        if self.coefficient == 0:
+            value = self.base
+        else:
+            value = round(self.base * self.coefficient * multiplier)
+
+        return f"{value}{self.units}"
