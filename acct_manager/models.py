@@ -92,6 +92,12 @@ class Resource(BaseModel):
     kind: str
     metadata: Metadata
 
+    @classmethod
+    def quick(
+        cls, name: str, namespace: Optional[str] = None, **kwargs: Any
+    ) -> Resource:
+        return cls(metadata=Metadata(name=name, namespace=namespace), **kwargs)
+
 
 class NamespacedResource(Resource):
     """A Resource that requires a namespace"""
