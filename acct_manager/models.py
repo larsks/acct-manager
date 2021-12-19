@@ -234,26 +234,6 @@ class ResourceQuota(NamespacedResource):
     kind: str = "ResourceQuota"
     spec: ResourceQuotaSpec
 
-    @classmethod
-    def from_quotaspec(
-        cls,
-        name: str,
-        project: str,
-        scope: Optional[str],
-        quotaspec: dict[str, str],
-    ) -> ResourceQuota:
-        """Transform quota values into a ResourceQuota"""
-        spec = ResourceQuotaSpec(
-            hard=quotaspec,
-            scopes=[scope] if scope else [],
-        )
-        return cls(
-            metadata=NamespacedMetadata(
-                name=name, namespace=project, labels={"massopen.cloud/project": project}
-            ),
-            spec=spec,
-        )
-
 
 class LimitDef(BaseModel):
     """Defines limits for a single type"""
