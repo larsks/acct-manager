@@ -100,9 +100,21 @@ class Resource(BaseModel):
 
     @classmethod
     def quick(
-        cls, name: str, namespace: Optional[str] = None, **kwargs: Any
+        cls,
+        name: str,
+        namespace: Optional[str] = None,
+        labels: Optional[dict[str, str]] = None,
+        **kwargs: Any,
     ) -> Resource:
-        return cls(metadata=Metadata(name=name, namespace=namespace), **kwargs)
+        """Convenience method for creating new resource"""
+        metadata: Union[Metadata, NamespacedMetadata]
+
+        if namespace:
+            metadata = NamespacedMetadata(name=name, namespace=namespace, labels=labels)
+        else:
+            metadata = Metadata(name=name, labels=labels)
+
+        return cls(metadata=metadata, **kwargs)
 
 
 class NamespacedResource(Resource):

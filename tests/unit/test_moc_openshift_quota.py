@@ -3,6 +3,8 @@
 import json
 from unittest import mock
 
+from acct_manager import models
+
 
 def test_read_quota_file_missing(moc):
     with mock.patch(
@@ -44,3 +46,38 @@ def test_read_quota_file_with_data(moc):
         moc.read_quota_file()
         assert moc.quotas.quotas[0].scopes == ["Project"]
         assert moc.quotas.limits[0].type == "Container"
+
+
+def test_get_limitrange(moc):
+    limitranges = [
+        models.LimitRange.quick(
+            "test-project-limits",
+            namespace="test-project",
+            labels={"massopen.cloud/project": "test-project"},
+            spec=models.LimitRangeSpec(limits=[]),
+        ),
+    ]
+
+    moc.resources.limitranges.get.return_value = mock.Mock(items=limitranges)
+    res = moc.get_limitrange("test-project")
+
+    assert len(res) == len(limitranges)
+    assert res[0].metadata.name == limitranges[0].metadata.name
+
+
+def test_delete_limitrange(moc):
+    limitranges = [
+        models.LimitRange.quick(
+            "test-project-limits",
+            namespace="test-project",
+            labels={"massopen.cloud/project": "test-project"},
+            spec=models.LimitRangeSpec(limits=[]),
+        ),
+    ]
+
+    moc.resources.limitranges.get.return_value = mock.Mock(items=limitranges)
+    moc.delete_limitrange("test-project")
+    assert (
+        mock.call.delete(name="test-project-limits", namespace="test-project")
+        in moc.resources.limitranges.method_calls
+    )
