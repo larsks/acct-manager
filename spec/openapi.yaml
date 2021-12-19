@@ -152,6 +152,12 @@ paths:
             application/json:
               schema:
                 $ref: "definitions.yaml#/definitions/QuotaResponse"
+        "403":
+          description: Attempt to access invalid project
+          content:
+            application/json:
+              schema:
+                $ref: "definitions.yaml#/definitions/Response"
         "404":
           description: Project does not exist
           content:
@@ -183,6 +189,12 @@ paths:
             application/json:
               schema:
                 $ref: "definitions.yaml#/definitions/QuotaResponse"
+        "403":
+          description: Attempt to access invalid project
+          content:
+            application/json:
+              schema:
+                $ref: "definitions.yaml#/definitions/Response"
         "404":
           description: Project does not exist
           content:
@@ -205,6 +217,12 @@ paths:
       responses:
         "200":
           description: Project quota deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "definitions.yaml#/definitions/Response"
+        "403":
+          description: Attempt to access invalid project
           content:
             application/json:
               schema:
@@ -241,6 +259,12 @@ paths:
             application/json:
               schema:
                 $ref: "definitions.yaml#/definitions/UserResponse"
+        "409":
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: "definitions.yaml#/definitions/Response"
         "400":
           description: An unexpected error occurred
           content:
@@ -337,6 +361,12 @@ paths:
             application/json:
               schema:
                 $ref: "definitions.yaml#/definitions/RoleResponse"
+        "403":
+          description: Attempt to access an invalid project
+          content:
+            application/json:
+              schema:
+                $ref: "definitions.yaml#/definitions/Response"
         "404":
           description: User or project does not exist
           content:
@@ -363,6 +393,12 @@ paths:
             application/json:
               schema:
                 $ref: "definitions.yaml#/definitions/Response"
+        "403":
+          description: Attempt to access an invalid project
+          content:
+            application/json:
+              schema:
+                $ref: "definitions.yaml#/definitions/Response"
         "404":
           description: User or project does not exist
           content:
@@ -385,6 +421,12 @@ paths:
       responses:
         "200":
           description: Role revoked successfully
+          content:
+            application/json:
+              schema:
+                $ref: "definitions.yaml#/definitions/Response"
+        "403":
+          description: Attempt to access an invalid project
           content:
             application/json:
               schema:

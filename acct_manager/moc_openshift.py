@@ -99,6 +99,7 @@ class MocOpenShift:
         NotFoundError. If unsafe is False (the default), raise an
         InvalidProjectError if the specified project exists but does not have
         the required label."""
+        self.logger.info("look up project %s", name)
         res = self.resources.projects.get(name=name)
         project = models.Project.parse_obj(res)
 
@@ -174,6 +175,18 @@ class MocOpenShift:
             check_if_safe(group)
 
         return group
+
+    def get_role_group(self, project: str, role: str) -> models.Group:
+        """Get group associated with a role on a project"""
+        group_name = make_group_name(project, role)
+
+        # check that role name is valid
+        check_role_name(role)
+
+        # check that we should be accessing the target project
+        self.get_project(project)
+
+        return self.get_group(group_name)
 
     def create_group(self, name: str, project_name: str) -> models.Group:
         """Create a new group"""
@@ -314,10 +327,11 @@ class MocOpenShift:
 
     def user_has_role(self, user: str, project: str, role: str) -> bool:
         """Return True if the user has the given role in a project"""
-        check_role_name(role)
-        group_name = make_group_name(project, role)
-        res = self.resources.groups.get(name=group_name)
-        group = models.Group.parse_obj(res)
+        self.logger.info(
+            "check if user %s has role %s in project %s", user, role, project
+        )
+        group = self.get_role_group(project, role)
+
         try:
             return group.users is not None and user in group.users
         except TypeError:
@@ -326,10 +340,7 @@ class MocOpenShift:
     def add_user_to_role(self, user: str, project: str, role: str) -> models.Group:
         """Grant a user the named role in a project"""
         self.logger.info("add user %s to role %s in project %s", user, role, project)
-        check_role_name(role)
-        group_name = make_group_name(project, role)
-        res = self.resources.groups.get(name=group_name)
-        group = models.Group.parse_obj(res)
+        group = self.get_role_group(project, role)
 
         if group.users is not None and user not in group.users:
             group.users.append(user)
@@ -342,10 +353,7 @@ class MocOpenShift:
         self.logger.info(
             "remove user %s from role %s in project %s", user, role, project
         )
-        check_role_name(role)
-        group_name = make_group_name(project, role)
-        res = self.resources.groups.get(name=group_name)
-        group = models.Group.parse_obj(res)
+        group = self.get_role_group(project, role)
 
         try:
             if group.users is not None:
@@ -470,6 +478,7 @@ class MocOpenShift:
     def get_limitrange(self, project: str) -> list[models.LimitRange]:
         """Get limitranges for a project"""
         self.logger.info("get limitranges in project %s", project)
+
         limitranges = self.resources.limitranges.get(
             namespace=project, label_selector="massopen.cloud/project"
         )
@@ -492,6 +501,7 @@ class MocOpenShift:
     def get_resourcequota(self, project: str) -> list[models.ResourceQuota]:
         """Get resourcequotas for a project"""
         self.logger.info("get resourcequotas in project %s", project)
+
         quotas = self.resources.resourcequotas.get(
             namespace=project, label_selector="massopen.cloud/project"
         )
@@ -581,22 +591,18 @@ class MocOpenShift:
 
         return resources
 
-    def create_resourcequota(
+    def create_resourcequotas(
         self, project: str, multiplier: int
-    ) -> Tuple[list[models.ResourceQuota], list[models.LimitRange]]:
-        """Create resourcequotas for a project"""
+    ) -> list[models.ResourceQuota]:
+        """Create resourcequotas for project"""
+
         self.logger.info(
-            "creating resourcequotas and limits for project %s with multiplier %d",
+            "creating resourcequotas for project %s with multiplier %d",
             project,
             multiplier,
         )
 
-        # we re-read the quota file on each request in case there have been
-        # changes.
-        self.read_quota_file()
-
         quotas = self.generate_resourcequotas(project, multiplier)
-        limits = self.generate_limitranges(project, multiplier)
 
         for quota in quotas:
             self.logger.debug(
@@ -606,17 +612,64 @@ class MocOpenShift:
             )
             self.resources.resourcequotas.create(body=quota.dict(exclude_none=True))
 
-        self.logger.debug(
-            "creating limitrange %s for project %s", limits.metadata.name, project
+        return quotas
+
+    def create_limitrange(
+        self, project: str, multiplier: int
+    ) -> list[models.LimitRange]:
+        """Create limitranges for a project
+
+        We only ever create a single limitrange, but we return a list to match
+        the signature of create_resourcequotas."""
+
+        self.logger.info(
+            "creating limitrange for project %s with multiplier %d",
+            project,
+            multiplier,
         )
+
+        limits = self.generate_limitranges(project, multiplier)
         self.resources.limitranges.create(body=limits.dict(exclude_none=True))
 
-        return quotas, [limits]
+        return [limits]
 
-    def update_resourcequota(
+    def create_quota_bundle(
+        self, project: str, multiplier: int
+    ) -> Tuple[list[models.ResourceQuota], list[models.LimitRange]]:
+        """Create resourcequotas for a project"""
+
+        self.logger.info(
+            "create quota bundle for project %s with multiplier %d",
+            project,
+            multiplier,
+        )
+
+        # check that we should be accessing the target project
+        self.get_project(project)
+
+        # we re-read the quota file on each request in case there have been
+        # changes.
+        self.read_quota_file()
+
+        quotas = self.create_resourcequotas(project, multiplier)
+        limits = self.create_limitrange(project, multiplier)
+
+        return quotas, limits
+
+    def delete_quota_bundle(self, project: str) -> None:
+        """Delete resourcequotas and limitranges in project"""
+
+        self.logger.info("delete quota bundle for project %s", project)
+
+        # check that we should be accessing the target project
+        self.get_project(project)
+
+        self.delete_resourcequota(project)
+        self.delete_limitrange(project)
+
+    def update_quota_bundle(
         self, project: str, multiplier: int
     ) -> Tuple[list[models.ResourceQuota], list[models.LimitRange]]:
         """Delete and re-create quotas"""
-        self.delete_resourcequota(project)
-        self.delete_limitrange(project)
-        return self.create_resourcequota(project, multiplier)
+        self.delete_quota_bundle(project)
+        return self.create_quota_bundle(project, multiplier)

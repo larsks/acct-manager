@@ -331,7 +331,7 @@ def create_app(**config: str) -> flask.Flask:
     @wrap_response
     def update_quota(project_name: str) -> models.QuotaResponse:
         qreq = models.QuotaRequest(**flask.request.json)
-        quotas, limits = moc.update_resourcequota(project_name, qreq.multiplier)
+        quotas, limits = moc.update_quota_bundle(project_name, qreq.multiplier)
         return models.QuotaResponse(
             error=False,
             msg=f"updated quotas for project {project_name}",
@@ -344,7 +344,7 @@ def create_app(**config: str) -> flask.Flask:
     @handle_exceptions
     @wrap_response
     def delete_quota(project_name: str) -> models.Response:
-        moc.delete_resourcequota(project_name)
+        moc.delete_quota_bundle(project_name)
         return models.Response(
             error=False, message=f"deleted quotas for project {project_name}"
         )
