@@ -6,7 +6,7 @@ import pydantic
 import pytest
 
 from acct_manager import exc, models
-from .conftest import fake_404_response
+from .conftest import fake_response
 
 
 def test_get_project(moc):
@@ -31,7 +31,7 @@ def test_project_exists(moc):
 
 
 def test_project_not_exists(moc):
-    moc.resources.projects.get.side_effect = exc.NotFoundError(fake_404_response)
+    moc.resources.projects.get.side_effect = exc.NotFoundError(fake_response(404))
     assert not moc.project_exists("test-project")
 
 
@@ -55,7 +55,7 @@ def test_create_project(moc):
             annotations={"openshift.io/requester": "test-requester"},
         )
     )
-    moc.resources.projects.get.side_effect = exc.NotFoundError(fake_404_response)
+    moc.resources.projects.get.side_effect = exc.NotFoundError(fake_response(404))
     moc.create_project("test-project", "test-requester")
     assert (
         mock.call.projects.create(body=project.dict(exclude_none=True))
@@ -88,7 +88,7 @@ def test_delete_project_exists(moc):
 
 
 def test_delete_project_not_exists(moc):
-    moc.resources.projects.get.side_effect = exc.NotFoundError(fake_404_response)
+    moc.resources.projects.get.side_effect = exc.NotFoundError(fake_response(404))
     with pytest.raises(exc.NotFoundError):
         moc.delete_project("test-project")
     assert (
@@ -105,6 +105,6 @@ def test_delete_project_invalid_target(moc):
 
 
 def test_create_project_invalid_name(moc):
-    moc.resources.projects.get.side_effect = exc.NotFoundError(fake_404_response)
+    moc.resources.projects.get.side_effect = exc.NotFoundError(fake_response(404))
     with pytest.raises(pydantic.error_wrappers.ValidationError):
         moc.create_project("Invalid Name", "test-requester")

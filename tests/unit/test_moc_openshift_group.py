@@ -5,7 +5,7 @@ from unittest import mock
 import pytest
 
 from acct_manager import exc, models
-from .conftest import fake_404_response
+from .conftest import fake_response
 
 
 def test_create_group(moc):
@@ -15,7 +15,7 @@ def test_create_group(moc):
         )
     )
 
-    moc.resources.groups.get.side_effect = exc.NotFoundError(fake_404_response)
+    moc.resources.groups.get.side_effect = exc.NotFoundError(fake_response(404))
     moc.create_group("test-group", "test-project")
     assert (
         mock.call.create(body=group.dict(exclude_none=True))
@@ -48,7 +48,7 @@ def test_delete_group_exists(moc):
 
 
 def test_delete_group_not_exists(moc):
-    moc.resources.groups.get.side_effect = exc.NotFoundError(fake_404_response)
+    moc.resources.groups.get.side_effect = exc.NotFoundError(fake_response(404))
 
     moc.delete_group("test-group")
     assert mock.call.delete(name="test-group") not in moc.resources.groups.method_calls

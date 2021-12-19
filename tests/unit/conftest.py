@@ -5,14 +5,36 @@ from unittest import mock
 import pytest
 
 from acct_manager import moc_openshift
+from acct_manager import models
 
-fake_404_response = mock.Mock(status=404)
+
+def fake_response(status_code):
+    return mock.Mock(status=status_code, status_code=status_code)
+
+
+@pytest.fixture
+def a_project():
+    return models.Project(
+        metadata=models.Metadata(
+            name="test-project", labels={"massopen.cloud/project": "test-project"}
+        ),
+    )
+
+
+@pytest.fixture
+def a_group():
+    return models.Group(
+        metadata=models.Metadata(
+            name="test-project-admin",
+            labels={"massopen.cloud/project": "test-project"},
+        ),
+    )
 
 
 @pytest.fixture
 def moc():
     _moc = moc_openshift.MocOpenShift(
-        mock.Mock(), "fake_idp", "fake_quotas", mock.Mock()
+        mock.Mock(), "fake-idp", "fake-quotas", mock.Mock()
     )
     _moc.resources = mock.Mock()
     return _moc
