@@ -237,7 +237,7 @@ class MocOpenShift:
 
         try:
             for role in role_map:
-                group_name = f"{name}-{role}"
+                group_name = make_group_name(name, role)
                 self.create_group(group_name, name)
                 self.create_rolebinding(name, group_name, role)
         except Exception:
@@ -254,7 +254,7 @@ class MocOpenShift:
         self.logger.info("delete project bundle for %s", name)
 
         for role in role_map:
-            group_name = f"{name}-{role}"
+            group_name = make_group_name(name, role)
             self.logger.debug("delete group %s", group_name)
             self.delete_group(group_name)
 
@@ -331,11 +331,7 @@ class MocOpenShift:
             "check if user %s has role %s in project %s", user, role, project
         )
         group = self.get_role_group(project, role)
-
-        try:
-            return group.users is not None and user in group.users
-        except TypeError:
-            return False
+        return group.users is not None and user in group.users
 
     def add_user_to_role(self, user: str, project: str, role: str) -> models.Group:
         """Grant a user the named role in a project"""
@@ -473,7 +469,8 @@ class MocOpenShift:
     def read_quota_file(self) -> None:
         """Read quota definitions"""
         self.logger.info("reading quotas from %s", self.quota_file)
-        self.quotas = models.QuotaFile.parse_file(self.quota_file)
+        with open(self.quota_file, "r") as fd:
+            self.quotas = models.QuotaFile.parse_raw(fd.read())
 
     def get_limitrange(self, project: str) -> list[models.LimitRange]:
         """Get limitranges for a project"""
