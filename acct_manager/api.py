@@ -170,11 +170,6 @@ def create_app(**config: str) -> flask.Flask:
             )
             return res
 
-        @app.route("/api/")
-        @app.route("/api/<path:path>")
-        def api_docs(path: str = "index.html") -> flask.Response:
-            return flask.send_from_directory("../spec", path)
-
     @auth.verify_password
     def verify_password(username: str, password: str) -> bool:
         """Validate user credentials.
@@ -190,6 +185,11 @@ def create_app(**config: str) -> flask.Flask:
                 and password == app.config["ADMIN_PASSWORD"]
             )
         )
+
+    @app.route("/api/")
+    @app.route("/api/<path:path>")
+    def api_docs(path: str = "index.html") -> flask.Response:
+        return flask.send_from_directory("../spec", path)
 
     @app.route("/healthz", methods=GET)
     def healthcheck() -> flask.Response:
