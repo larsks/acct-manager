@@ -1,7 +1,7 @@
 """Pydantic models for the onboarding microservice API
 
-Models marked with `_expose = True` are public facing models that will be
-published in the OpenAPI schema.
+Models marked with @expose (and their dependencies) will be published in the
+OpenAPI schema.
 """
 
 # https://www.python.org/dev/peps/pep-0563/
@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import enum
 import re
-from typing import Optional, Union, Any
+from typing import Optional, Union, Type, Any
 
 from pydantic import BaseModel, validator, root_validator
+
+public_models: list[Type[BaseModel]] = []
 
 
 # pylint: disable=unused-argument
@@ -37,10 +39,15 @@ def remove_null_keys(
     return value
 
 
+def expose(cls: Any) -> Any:
+    """Mark model as exposed in public api"""
+    public_models.append(cls)
+    return cls
+
+
+@expose
 class UserRequest(BaseModel):
     """Request to create a user"""
-
-    _expose: bool = True
 
     name: str
     fullName: Optional[str]
@@ -55,10 +62,9 @@ class UserRequest(BaseModel):
         return value
 
 
+@expose
 class ProjectRequest(BaseModel):
     """Request to create a project"""
-
-    _expose: bool = True
 
     name: str
     requester: str
@@ -263,10 +269,9 @@ class LimitRange(NamespacedResource):
     spec: LimitRangeSpec
 
 
+@expose
 class QuotaRequest(BaseModel):
     """A quota request"""
-
-    _expose: bool = True
 
     multiplier: int
 
@@ -279,35 +284,31 @@ class QuotaRequest(BaseModel):
         return value
 
 
+@expose
 class Response(BaseModel):
     """An API response object"""
-
-    _expose: bool = True
 
     error: bool
     message: Optional[str]
 
 
+@expose
 class ProjectResponse(Response):
     """API response that contains a project"""
-
-    _expose: bool = True
 
     project: Project
 
 
+@expose
 class UserResponse(Response):
     """API response that contains a user"""
-
-    _expose: bool = True
 
     user: User
 
 
+@expose
 class QuotaResponse(Response):
     """API response that contains quota information"""
-
-    _expose: bool = True
 
     quotas: list[ResourceQuota]
     limits: list[LimitRange]
@@ -322,10 +323,9 @@ class RoleResponseData(BaseModel):
     has_role: bool
 
 
+@expose
 class RoleResponse(Response):
     """Response when querying if user has a given role in project"""
-
-    _expose: bool = True
 
     role: RoleResponseData
 
@@ -369,10 +369,9 @@ class QFQuotaSpec(BaseModel):
     values: dict[str, ScaledValue]
 
 
+@expose
 class QuotaFile(BaseModel):
     """Quota definition file"""
-
-    _expose: bool = True
 
     quotas: Optional[list[QFQuotaSpec]]
     limits: Optional[list[QFLimitSpec]]
