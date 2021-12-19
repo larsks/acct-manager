@@ -153,6 +153,22 @@ def create_app(**config: str) -> flask.Flask:
     )
 
     if app.config.get("ENV") == "development":
+        # Enable CORS headers when running in development mode
+        # so that the API examples in the rendered OpenAPI specification
+        # will work when the docs and the service aren't hosted
+        # in the same place.
+        @app.after_request
+        def add_cors_headers(res: flask.Response) -> flask.Response:
+            res.headers["Access-Control-Allow-Origin"] = flask.request.headers.get(
+                "origin", "*"
+            )
+            res.headers["Access-Control-Allow-Methods"] = ", ".join(
+                ["OPTIONS", "GET", "POST", "PUT", "DELETE"]
+            )
+            res.headers["Access-Control-Allow-Headers"] = ", ".join(
+                ["Authorization", "Content-type"]
+            )
+            return res
 
         @app.route("/api/")
         @app.route("/api/<path:path>")
