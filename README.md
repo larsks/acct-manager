@@ -6,28 +6,43 @@ You can find the OpenAPI specification for this API in
 [spec/openapi.yaml](spec/openapi.yaml). There is an HTML version of
 the spec available at <http://oddbit.com/acct-manager/>.
 
-## Running the code
+## Running the code in CRC
 
- In the following instructions I'm assuming you're using [Code Ready
- Containers][crc]; if not, you may need to change the name of the
- identity provider.
+[Code Ready Containers][crc] allows you to quickly set up an OpenShift
+development environment. This makes an excellent target for testing
+out our onboarding API.
+
+These instructions assume that you already have CRC running and that
+the `oc` command is currently authenticated as the `kubeadmin` user.
+
+[crc]: https://developers.redhat.com/products/codeready-containers/overview
+
+### Configure CRC
+
+First, apply the manifests in `manifests/authentication`:
+
+```
+oc apply -k manifests/authentication
+```
+
+This will create add a second identity provider (IDP) named
+`onboarding` to your `OAuth` configuration. The IDP has three users
+(`test-user-{1,2,3}`), all of which have the password `secret`, and is
+configured in [`lookup` mode][lookup], which means that these users
+will be unable to authenticate until you have created the necessary
+`User`, `Identity`, and `UserIdentityMapping` objects in OpenShift
+(e.g. by using the onboarding API).
+
+[lookup]: https://docs.openshift.com/container-platform/4.9/authentication/understanding-identity-provider.html#identity-provider-parameters_understanding-identity-provider
+
+This will also disable self-provisioning so that users are unable to
+create new projects.
 
 ### Running the code locally
 
 This is generally the best option during development.
 
-1. Make sure you're authenticated to your development OpenShift
-   environment (with appropriate privileges for manipulating users,
-   groups, rolebindings, etc).
-
-   ```
-   $ oc whoami
-   kubeadmin
-   ```
-
-   [crc]: https://developers.redhat.com/products/codeready-containers/overview
-
-2. Place the following content in a `.env` file in the current
+1. Place the following content in a `.env` file in the current
    directory:
 
     ```
@@ -37,13 +52,13 @@ This is generally the best option during development.
     FLASK_APP=acct_manager.wsgi
     ```
 
-3. Install package requirements:
+1. Install package requirements:
 
     ```
     pip install -r requirements.txt
     ```
 
-4. Run the code:
+1. Run the code:
 
     ```
     flask run -p 8080
@@ -59,8 +74,10 @@ This is generally the best option during development.
 
 This repository is published as a container image at
 `quay.io/larsks/moc-acct-manager:latest`, which is rebuilt
-automatically when commits are pushed to this repository. You can run
-the service with podman by doing something like this:
+automatically when commits are pushed to this repository.
+
+First, configure your `.env` file as in the previous section. You can
+then run the service with podman by doing something like this:
 
 ```
 podman run --rm -p 8080:8080 \
@@ -71,14 +88,11 @@ podman run --rm -p 8080:8080 \
   quay.io/larsks/moc-acct-manager:latest
 ```
 
-As above, this requires you to be authenticated against OpenShift
-because it uses your `~/.kube/config` file for credentials.
-
 ### Running the code in OpenShift
 
-There are examples Kubernetes manifests in the `manifests` directory
-that are designed to be applied using [Kustomize][]. To deploy this
-application into [CRC][]:
+There are examples Kubernetes manifests in the
+`manifests/onboarding-api` directory that are designed to be applied
+using [Kustomize][]. To deploy this application into CRC:
 
 [kustomize]: https://kustomize.io/
 
@@ -111,14 +125,25 @@ pytest tests/unit
 ## Running the functional tests
 
 The functional tests interact with a live version of the API. Start
-the API service as described above, then set the
-`ACCT_MGR_API_ENDPOINT` environment variable to the URL of the
-service.
+the API service as described above, and then run the tests like this:
 
 ```
-$ export ACCT_MGR_API_ENDPOINT=http://localhost:8080
 $ pytest tests/functional
 ```
+
+By default the tests will attempt to interact with a service hosted at
+`http://localhost:8080`. If you want to run the tests against a
+different endpoint, you can set the `ACCT_MGR_API_ENDPOINT`
+environment variable:
+
+```
+$ ACCT_MGR_API_ENDPOINT=https://onboarding-onboarding.apps-crc.testing \
+  pytest tests/functional
+```
+
+These tests assume that you have deployed the `quotas.json` file in
+this repository (which will be the case if you have deployed the
+service using any of the mechanisms described in this document).
 
 ## Examples
 
@@ -127,8 +152,6 @@ easier if you install [HTTPie][], which is what I'll be using in the
 following examples.
 
 [httpie]: https://httpie.io/cli
-
-
 
 ### Create a user
 

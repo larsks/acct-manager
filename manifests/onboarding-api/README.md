@@ -7,4 +7,4 @@ in [Code Ready Containers][crc]:
 kustomize build overlays/crc | oc apply -f-
 ```
 
-   [crc]: https://developers.redhat.com/products/codeready-containers/overview
+[crc]: https://developers.redhat.com/products/codeready-containers/overview
