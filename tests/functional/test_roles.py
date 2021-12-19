@@ -13,9 +13,9 @@ def test_user_role(session, a_user, a_project):
     res = session.put(url)
     assert res.status_code == 200
     data = res.json()
-    assert data["group"]["users"] == [a_user]
+    assert data["role"]["has_role"]
 
     res = session.delete(url)
     assert res.status_code == 200
     data = res.json()
-    assert data["group"]["users"] == []
+    assert not data["role"]["has_role"]

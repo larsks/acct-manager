@@ -330,14 +330,6 @@ class RoleResponse(Response):
     role: RoleResponseData
 
 
-class GroupResponse(Response):
-    """API response that contains a group"""
-
-    _expose: bool = True
-
-    group: Group
-
-
 class ScaledValue(BaseModel):
     """Represents a value that can be scaled by a multiplier"""
 

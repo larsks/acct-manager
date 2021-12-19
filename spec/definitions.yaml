@@ -1,42 +1,4 @@
 definitions:
-  Group:
-    description: A user.openshift.io/v1 Group
-    properties:
-      apiVersion:
-        default: user.openshift.io/v1
-        title: Apiversion
-        type: string
-      kind:
-        default: Group
-        title: Kind
-        type: string
-      metadata:
-        $ref: '#/definitions/Metadata'
-      users:
-        items:
-          type: string
-        title: Users
-        type: array
-    required:
-    - metadata
-    title: Group
-    type: object
-  GroupResponse:
-    description: API response that contains a group
-    properties:
-      error:
-        title: Error
-        type: boolean
-      group:
-        $ref: '#/definitions/Group'
-      message:
-        title: Message
-        type: string
-    required:
-    - error
-    - group
-    title: GroupResponse
-    type: object
   LimitDef:
     description: Defines limits for a single type
     properties:

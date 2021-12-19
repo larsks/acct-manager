@@ -408,7 +408,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "definitions.yaml#/definitions/Response"
+                $ref: "definitions.yaml#/definitions/RoleResponse"
         "403":
           description: Attempt to access an invalid project
           content:
@@ -440,7 +440,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "definitions.yaml#/definitions/Response"
+                $ref: "definitions.yaml#/definitions/RoleResponse"
         "403":
           description: Attempt to access an invalid project
           content:

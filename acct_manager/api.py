@@ -303,12 +303,18 @@ def create_app(**config: str) -> flask.Flask:
     @wrap_response
     def add_user_role(
         user_name: str, project_name: str, role_name: str
-    ) -> models.GroupResponse:
-        group = moc.add_user_to_role(user_name, project_name, role_name)
-        return models.GroupResponse(
+    ) -> models.RoleResponse:
+        moc.add_user_to_role(user_name, project_name, role_name)
+        res = moc.user_has_role(user_name, project_name, role_name)
+        return models.RoleResponse(
             error=False,
             msg=f"add user {user_name} to role {role_name} in project {project_name}",
-            group=group,
+            role=models.RoleResponseData(
+                user=user_name,
+                project=project_name,
+                role=role_name,
+                has_role=res,
+            ),
         )
 
     @app.route(
@@ -319,12 +325,18 @@ def create_app(**config: str) -> flask.Flask:
     @wrap_response
     def delete_user_role(
         user_name: str, project_name: str, role_name: str
-    ) -> models.GroupResponse:
-        group = moc.remove_user_from_role(user_name, project_name, role_name)
-        return models.GroupResponse(
+    ) -> models.RoleResponse:
+        moc.remove_user_from_role(user_name, project_name, role_name)
+        res = moc.user_has_role(user_name, project_name, role_name)
+        return models.RoleResponse(
             error=False,
             msg=f"remove user {user_name} from role {role_name} in project {project_name}",
-            group=group,
+            role=models.RoleResponseData(
+                user=user_name,
+                project=project_name,
+                role=role_name,
+                has_role=res,
+            ),
         )
 
     @app.route("/projects/<project_name>/quotas", methods=GET)
