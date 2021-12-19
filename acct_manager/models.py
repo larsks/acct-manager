@@ -283,8 +283,8 @@ class QuotaRequest(BaseModel):
     # pylint: disable=no-self-argument,unused-argument,no-self-use
     @validator("multiplier")
     def validate_multiplier(cls, value: int, values: dict[str, Any]) -> int:
-        """Ensure that multiplier is non-zero"""
-        if value == 0:
+        """Ensure that multiplier is positive"""
+        if value <= 0:
             raise ValueError(value)
         return value
 
