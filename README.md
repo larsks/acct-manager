@@ -65,7 +65,7 @@ the service with podman by doing something like this:
 ```
 podman run --rm -p 8080:8080 \
   -v $HOME/.kube:/root/.kube \
-  -v $PWD/manifests/base/quotas.json:/data/quotas.json \
+  -v $PWD/manifests/onboarding-api/base/quotas.json:/data/quotas.json \
   --env-file .env \
   -e ACCT_MGR_QUOTA_FILE=/data/quotas.json \
   quay.io/larsks/moc-acct-manager:latest
@@ -83,7 +83,7 @@ application into [CRC][]:
 [kustomize]: https://kustomize.io/
 
 ```
-$ oc apply -k manifests/overlays/crc
+$ oc apply -k manifests/onboarding-api/overlays/crc
 ```
 
 That will deploy the following resources:
