@@ -108,8 +108,6 @@ class NamespacedResource(Resource):
 class Project(Resource):
     """A project.openshift.io/v1 Project"""
 
-    _expose: bool = True
-
     apiVersion: str = "project.openshift.io/v1"
     kind: str = "Project"
 
@@ -130,8 +128,6 @@ class Project(Resource):
 class Group(Resource):
     """A user.openshift.io/v1 Group"""
 
-    _expose: bool = True
-
     apiVersion: str = "user.openshift.io/v1"
     kind: str = "Group"
     users: Optional[list[str]]
@@ -141,8 +137,6 @@ class Group(Resource):
 
 class User(Resource):
     """A user.openshift.io/v1 User"""
-
-    _expose: bool = True
 
     apiVersion: str = "user.openshift.io/v1"
     kind: str = "User"
@@ -234,8 +228,6 @@ class ResourceQuotaSpec(BaseModel):
 class ResourceQuota(NamespacedResource):
     """A v1 ResourceQuota"""
 
-    _expose: bool = True
-
     apiVersion: str = "v1"
     kind: str = "ResourceQuota"
     spec: ResourceQuotaSpec
@@ -264,8 +256,6 @@ class LimitRangeSpec(BaseModel):
 
 class LimitRange(NamespacedResource):
     """A v1 LimitRange"""
-
-    _expose: bool = True
 
     apiVersion: str = "v1"
     kind: str = "LimitRange"
