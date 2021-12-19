@@ -47,6 +47,11 @@ paths:
           application/json:
             schema:
               $ref: "definitions.yaml#/definitions/ProjectRequest"
+            example:
+              description: "A test project"
+              display_name: "Test Project"
+              name: "test-project"
+              requester: "test-user"
       responses:
         "200":
           description: Project creation was successful
@@ -73,6 +78,7 @@ paths:
         schema:
           type: string
         required: true
+        example: test-project
     get:
       operationId: getProject
       tags:
@@ -138,6 +144,7 @@ paths:
         schema:
           type: string
         required: true
+        example: test-project
     get:
       operationId: getProjectQuota
       tags:
@@ -182,6 +189,8 @@ paths:
           application/json:
             schema:
               $ref: "definitions.yaml#/definitions/QuotaRequest"
+            example:
+              multiplier: 1
       responses:
         "200":
           description: Project quota updated successfully
@@ -252,6 +261,9 @@ paths:
           application/json:
             schema:
               $ref: "definitions.yaml#/definitions/UserRequest"
+            example:
+              name: test-user
+              fullName: "Test User"
       responses:
         "200":
           description: User created successfully
@@ -278,6 +290,7 @@ paths:
         schema:
           type: string
         required: true
+        example: test-user
     get:
       operationId: getUser
       tags:
@@ -337,16 +350,19 @@ paths:
         schema:
           type: string
         required: true
+        example: test-user
       - name: project_name
         in: path
         schema:
           type: string
         required: true
+        example: test-project
       - name: role_name
         in: path
         schema:
           type: string
         required: true
+        example: admin
     get:
       operationId: getUserRole
       tags:
