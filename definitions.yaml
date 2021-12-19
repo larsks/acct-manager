@@ -1,0 +1,438 @@
+definitions:
+  LimitDef:
+    description: Defines limits for a single type
+    properties:
+      default:
+        additionalProperties:
+          type: string
+        title: Default
+        type: object
+      defaultRequest:
+        additionalProperties:
+          type: string
+        title: Defaultrequest
+        type: object
+      max:
+        additionalProperties:
+          type: string
+        title: Max
+        type: object
+      maxLimitRequestRatio:
+        additionalProperties:
+          type: string
+        title: Maxlimitrequestratio
+        type: object
+      min:
+        additionalProperties:
+          type: string
+        title: Min
+        type: object
+      type:
+        title: Type
+        type: string
+    required:
+    - type
+    title: LimitDef
+    type: object
+  LimitRange:
+    description: A v1 LimitRange
+    properties:
+      apiVersion:
+        default: v1
+        title: Apiversion
+        type: string
+      kind:
+        default: LimitRange
+        title: Kind
+        type: string
+      metadata:
+        $ref: '#/definitions/NamespacedMetadata'
+      spec:
+        $ref: '#/definitions/LimitRangeSpec'
+    required:
+    - metadata
+    - spec
+    title: LimitRange
+    type: object
+  LimitRangeSpec:
+    description: Spec portion of a v1 LimitRange
+    properties:
+      limits:
+        items:
+          $ref: '#/definitions/LimitDef'
+        title: Limits
+        type: array
+    title: LimitRangeSpec
+    type: object
+  Metadata:
+    description: Standard Kubernetes metadata
+    properties:
+      annotations:
+        additionalProperties:
+          type: string
+        title: Annotations
+        type: object
+      labels:
+        additionalProperties:
+          type: string
+        title: Labels
+        type: object
+      name:
+        title: Name
+        type: string
+    required:
+    - name
+    title: Metadata
+    type: object
+  NamespacedMetadata:
+    description: Standard Kubernetes metadata for a namespaced object
+    properties:
+      annotations:
+        additionalProperties:
+          type: string
+        title: Annotations
+        type: object
+      labels:
+        additionalProperties:
+          type: string
+        title: Labels
+        type: object
+      name:
+        title: Name
+        type: string
+      namespace:
+        title: Namespace
+        type: string
+    required:
+    - name
+    - namespace
+    title: NamespacedMetadata
+    type: object
+  Project:
+    description: A project.openshift.io/v1 Project
+    properties:
+      apiVersion:
+        default: project.openshift.io/v1
+        title: Apiversion
+        type: string
+      kind:
+        default: Project
+        title: Kind
+        type: string
+      metadata:
+        $ref: '#/definitions/Metadata'
+    required:
+    - metadata
+    title: Project
+    type: object
+  ProjectRequest:
+    description: Request to create a project
+    properties:
+      description:
+        title: Description
+        type: string
+      display_name:
+        title: Display Name
+        type: string
+      name:
+        title: Name
+        type: string
+      requester:
+        title: Requester
+        type: string
+    required:
+    - name
+    - requester
+    title: ProjectRequest
+    type: object
+  ProjectResponse:
+    description: API response that contains a project
+    properties:
+      error:
+        title: Error
+        type: boolean
+      message:
+        title: Message
+        type: string
+      project:
+        $ref: '#/definitions/Project'
+    required:
+    - error
+    - project
+    title: ProjectResponse
+    type: object
+  QFLimitSpec:
+    description: Limit specification
+    properties:
+      default:
+        additionalProperties:
+          $ref: '#/definitions/ScaledValue'
+        title: Default
+        type: object
+      defaultRequest:
+        additionalProperties:
+          $ref: '#/definitions/ScaledValue'
+        title: Defaultrequest
+        type: object
+      max:
+        additionalProperties:
+          $ref: '#/definitions/ScaledValue'
+        title: Max
+        type: object
+      maxLimitRequestRatio:
+        additionalProperties:
+          $ref: '#/definitions/ScaledValue'
+        title: Maxlimitrequestratio
+        type: object
+      min:
+        additionalProperties:
+          $ref: '#/definitions/ScaledValue'
+        title: Min
+        type: object
+      type:
+        title: Type
+        type: string
+    required:
+    - type
+    title: QFLimitSpec
+    type: object
+  QFQuotaSpec:
+    description: Quota specification
+    properties:
+      scopes:
+        items:
+          $ref: '#/definitions/Scope'
+        type: array
+      values:
+        additionalProperties:
+          $ref: '#/definitions/ScaledValue'
+        title: Values
+        type: object
+    required:
+    - scopes
+    - values
+    title: QFQuotaSpec
+    type: object
+  QuotaFile:
+    description: Quota definition file
+    properties:
+      limits:
+        items:
+          $ref: '#/definitions/QFLimitSpec'
+        title: Limits
+        type: array
+      quotas:
+        items:
+          $ref: '#/definitions/QFQuotaSpec'
+        title: Quotas
+        type: array
+    title: QuotaFile
+    type: object
+  QuotaRequest:
+    description: A quota request
+    properties:
+      multiplier:
+        title: Multiplier
+        type: integer
+    required:
+    - multiplier
+    title: QuotaRequest
+    type: object
+  QuotaResponse:
+    description: API response that contains quota information
+    properties:
+      error:
+        title: Error
+        type: boolean
+      limits:
+        items:
+          $ref: '#/definitions/LimitRange'
+        title: Limits
+        type: array
+      message:
+        title: Message
+        type: string
+      quotas:
+        items:
+          $ref: '#/definitions/ResourceQuota'
+        title: Quotas
+        type: array
+    required:
+    - error
+    - quotas
+    - limits
+    title: QuotaResponse
+    type: object
+  ResourceQuota:
+    description: A v1 ResourceQuota
+    properties:
+      apiVersion:
+        default: v1
+        title: Apiversion
+        type: string
+      kind:
+        default: ResourceQuota
+        title: Kind
+        type: string
+      metadata:
+        $ref: '#/definitions/NamespacedMetadata'
+      spec:
+        $ref: '#/definitions/ResourceQuotaSpec'
+    required:
+    - metadata
+    - spec
+    title: ResourceQuota
+    type: object
+  ResourceQuotaSpec:
+    description: Spec for a v1 ResourceQuota
+    properties:
+      hard:
+        additionalProperties:
+          type: string
+        title: Hard
+        type: object
+      scopes:
+        items:
+          $ref: '#/definitions/Scope'
+        type: array
+    title: ResourceQuotaSpec
+    type: object
+  Response:
+    description: An API response object
+    properties:
+      error:
+        title: Error
+        type: boolean
+      message:
+        title: Message
+        type: string
+    required:
+    - error
+    title: Response
+    type: object
+  RoleResponse:
+    description: Response when querying if user has a given role in project
+    properties:
+      error:
+        title: Error
+        type: boolean
+      message:
+        title: Message
+        type: string
+      role:
+        $ref: '#/definitions/RoleResponseData'
+    required:
+    - error
+    - role
+    title: RoleResponse
+    type: object
+  RoleResponseData:
+    description: API response that contains role membership information
+    properties:
+      has_role:
+        title: Has Role
+        type: boolean
+      project:
+        title: Project
+        type: string
+      role:
+        title: Role
+        type: string
+      user:
+        title: User
+        type: string
+    required:
+    - user
+    - project
+    - role
+    - has_role
+    title: RoleResponseData
+    type: object
+  ScaledValue:
+    description: Represents a value that can be scaled by a multiplier
+    properties:
+      base:
+        title: Base
+        type: integer
+      coefficient:
+        title: Coefficient
+        type: number
+      units:
+        title: Units
+        type: string
+    required:
+    - base
+    - coefficient
+    title: ScaledValue
+    type: object
+  Scope:
+    description: Valid quota scope values
+    enum:
+    - Project
+    - BestEffort
+    - NotBestEffort
+    - Terminating
+    - NotTerminating
+    title: Scope
+    type: string
+  User:
+    description: A user.openshift.io/v1 User
+    properties:
+      apiVersion:
+        default: user.openshift.io/v1
+        title: Apiversion
+        type: string
+      fullName:
+        title: Fullname
+        type: string
+      groups:
+        items:
+          type: string
+        title: Groups
+        type: array
+      identities:
+        items:
+          type: string
+        title: Identities
+        type: array
+      kind:
+        default: User
+        title: Kind
+        type: string
+      metadata:
+        $ref: '#/definitions/Metadata'
+    required:
+    - metadata
+    title: User
+    type: object
+  UserRequest:
+    description: Request to create a user
+    properties:
+      fullName:
+        title: Fullname
+        type: string
+      name:
+        title: Name
+        type: string
+    required:
+    - name
+    title: UserRequest
+    type: object
+  UserResponse:
+    description: API response that contains a user
+    properties:
+      error:
+        title: Error
+        type: boolean
+      message:
+        title: Message
+        type: string
+      user:
+        $ref: '#/definitions/User'
+    required:
+    - error
+    - user
+    title: UserResponse
+    type: object
+title: Onboarding Microservice API
+
