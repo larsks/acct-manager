@@ -469,8 +469,11 @@ class MocOpenShift:
     def read_quota_file(self) -> None:
         """Read quota definitions"""
         self.logger.info("reading quotas from %s", self.quota_file)
-        with open(self.quota_file, "r") as fd:
-            self.quotas = models.QuotaFile.parse_raw(fd.read())
+        try:
+            with open(self.quota_file, "r", encoding="utf-8") as fd:
+                self.quotas = models.QuotaFile.parse_raw(fd.read())
+        except FileNotFoundError as err:
+            self.logger.error("unable to read quota file %s: %s", self.quota_file, err)
 
     def get_limitrange(self, project: str) -> list[models.LimitRange]:
         """Get limitranges for a project"""
@@ -647,6 +650,9 @@ class MocOpenShift:
         # we re-read the quota file on each request in case there have been
         # changes.
         self.read_quota_file()
+
+        if not self.quotas.quotas and not self.quotas.limits:
+            raise exc.NoQuotasError("no quota is defined in configuration")
 
         quotas = self.create_resourcequotas(project, multiplier)
         limits = self.create_limitrange(project, multiplier)

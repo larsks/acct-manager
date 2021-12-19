@@ -106,7 +106,7 @@ def handle_exceptions(func: TFunc) -> TFunc:
             flask.current_app.logger.warning("validation error: %s", err)
             message = models.Response(error=True, message=f"validation error: {err}")
         except exc.AccountManagerError as err:
-            flask.current_app.logger.warning("account manager errror: %s", err)
+            flask.current_app.logger.warning("account manager error: %s", err)
             message = models.Response(
                 error=True,
                 message=f"account manager API error: {err}",
@@ -115,7 +115,7 @@ def handle_exceptions(func: TFunc) -> TFunc:
             flask.current_app.logger.error("kubernetes api error: %s", err)
             message = models.Response(
                 error=True,
-                message="Unexpected kubernetes API error",
+                message="unexpected kubernetes API error",
             )
 
         return flask.Response(

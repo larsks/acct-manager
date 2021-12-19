@@ -4,6 +4,16 @@ import json
 from unittest import mock
 
 
+def test_read_quota_file_missing(moc):
+    with mock.patch(
+        "acct_manager.moc_openshift.open", mock.mock_open(read_data="{}")
+    ) as mock_open:
+        mock_open.side_effect = FileNotFoundError()
+        moc.read_quota_file()
+        assert moc.quotas.quotas == []
+        assert moc.quotas.limits == []
+
+
 def test_read_quota_file_empty_map(moc):
     with mock.patch("acct_manager.moc_openshift.open", mock.mock_open(read_data="{}")):
         moc.read_quota_file()
