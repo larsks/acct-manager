@@ -32,7 +32,7 @@ This is generally the best option during development.
 
     ```
     ACCT_MGR_ADMIN_PASSWORD=secret
-    ACCT_MGR_IDENTITY_PROVIDER=developer
+    ACCT_MGR_IDENTITY_PROVIDER=onboarding
     FLASK_ENV=development
     FLASK_APP=acct_manager.wsgi
     ```
