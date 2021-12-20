@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: onboarding
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+      - name: onboarding
+        env:
+          - name: ACCT_MGR_QUOTA_FILE
+            value: /data/quotas.json
+        envFrom:
+          - secretRef:
+              name: onboarding-credentials
+          - configMapRef:
+              name: onboarding-config
+        image: quay.io/larsks/moc-acct-manager:latest
+        imagePullPolicy: Always
+        volumeMounts:
+          - name: quotas
+            mountPath: /data/quotas.json
+            subPath: quotas.json
+        ports:
+          - name: http
+            containerPort: 8080
+      serviceAccountName: onboarding
+      volumes:
+        - name: quotas
+          configMap:
+            name: onboarding-quotas

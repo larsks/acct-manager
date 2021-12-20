@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- oauth/cluster.yaml
+- clusterrolebindings/no-self-provisioners.yaml
+
+secretGenerator:
+  - name: onboarding-htpass-secret
+    namespace: openshift-config
+    files:
+      - htpasswd
+
+generatorOptions:
+  disableNameSuffixHash: true

@@ -1,0 +1,23 @@
+apiVersion: config.openshift.io/v1
+kind: OAuth
+metadata:
+  name: cluster
+spec:
+  identityProviders:
+  - name: developer
+    type: HTPasswd
+    htpasswd:
+      fileData:
+        name: htpass-secret
+    mappingMethod: claim
+  - name: onboarding
+    type: HTPasswd
+    htpasswd:
+      fileData:
+        name: onboarding-htpass-secret
+    mappingMethod: lookup
+  templates:
+    login:
+      name: login-template
+  tokenConfig:
+    accessTokenMaxAgeSeconds: 0

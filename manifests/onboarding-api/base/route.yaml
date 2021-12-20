@@ -1,0 +1,12 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: onboarding
+spec:
+  port:
+    targetPort: http
+  to:
+    kind: Service
+    name: onboarding
+  tls:
+    termination: edge
