@@ -1,0 +1,31 @@
+# Publish the OpenAPI specification to the gh-pages branch
+# (but only if this commit modifies the spec)
+
+name: Publish OpenAPI specification
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - spec/*
+
+jobs:
+  publish-openapi-spec:
+    name: Publish OpenAPI specification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install ghp-import
+
+      - name: Publish spec
+        run: |
+          ghp-import spec --push --force
