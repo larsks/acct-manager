@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import enum
 import re
-from typing import Optional, Union, Type, Any
+from typing import Optional, Union, Type, TypeVar, Any
 
 from pydantic import BaseModel, validator, root_validator
 
@@ -76,8 +76,8 @@ class Metadata(BaseModel):
     """Standard Kubernetes metadata"""
 
     name: str
-    labels: Optional[dict[str, Union[str, None]]]
-    annotations: Optional[dict[str, Union[str, None]]]
+    labels: Optional[dict[str, Optional[str]]]
+    annotations: Optional[dict[str, Optional[str]]]
 
     _remove_null_keys_labels = validator("labels", allow_reuse=True)(remove_null_keys)
     _remove_null_keys_annotations = validator("annotations", allow_reuse=True)(
@@ -91,6 +91,9 @@ class NamespacedMetadata(Metadata):
     namespace: str
 
 
+TResource = TypeVar("TResource", bound="Resource")
+
+
 class Resource(BaseModel):
     """Fields and methods common to all resources"""
 
@@ -100,15 +103,16 @@ class Resource(BaseModel):
 
     @classmethod
     def quick(
-        cls,
+        cls: Type[TResource],
         name: str,
         namespace: Optional[str] = None,
-        labels: Optional[dict[str, str]] = None,
-        annotations: Optional[dict[str, str]] = None,
+        labels: Optional[dict[str, Optional[str]]] = None,
+        annotations: Optional[dict[str, Optional[str]]] = None,
         **kwargs: Any,
-    ) -> Resource:
+    ) -> TResource:
         """Convenience method for creating new resource"""
         metadata: Union[Metadata, NamespacedMetadata]
+        mdclass: Union[Type[Metadata], Type[NamespacedMetadata]]
 
         if namespace:
             mdclass = NamespacedMetadata

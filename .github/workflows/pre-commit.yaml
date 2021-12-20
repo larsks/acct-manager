@@ -1,0 +1,27 @@
+# Run pre-commit checks on all pushes and pull requests
+
+name: Pre-commit
+on:
+  push:
+  pull_request:
+
+jobs:
+  run-linters:
+    name: Pre-commit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Install pre-commit
+        run: |
+          pip install pre-commit
+
+      - name: Run pre-commit
+        run: |
+          pre-commit run --all-files
