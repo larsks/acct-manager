@@ -6,6 +6,18 @@ You can find the OpenAPI specification for this API in
 [spec/openapi.yaml](spec/openapi.yaml). There is an HTML version of
 the spec available at <http://oddbit.com/acct-manager/>.
 
+This specification differs from the original in a few areas:
+
+- We use `POST /users` to create new users (instead of `PUT
+  /users/<username>`), and similarly for projects. This follows
+  [existing conventions for REST APIs][put-vs-post].
+
+- The original specification did not provide details about request
+  or return content. They are fully specified in this document, but
+  may not match other implementations.
+
+[put-vs-post]: https://restfulapi.net/rest-put-vs-post/
+
 ## Running the code in CRC
 
 [Code Ready Containers][crc] allows you to quickly set up an OpenShift
