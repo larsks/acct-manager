@@ -1,6 +1,7 @@
-openshift
-pydantic
-python-dotenv
 flask
 flask_httpauth
 gunicorn
+kubernetes
+openshift
+pydantic
+python-dotenv

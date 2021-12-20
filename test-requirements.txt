@@ -1,4 +1,4 @@
-pytest
-pytest-coverage
 flake8
 mypy
+pytest
+pytest-coverage
