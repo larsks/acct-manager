@@ -40,15 +40,15 @@ def test_namespacedmetadata_no_namespace():
 
 
 def test_project():
-    p = models.Project(metadata=models.Metadata(name="test-project"))
+    p = models.Project.quick(name="test-project")
     assert p.metadata.name == "test-project"
 
 
 def test_project_invalid_name():
     with pytest.raises(pydantic.ValidationError):
-        models.Project(metadata=models.Metadata(name="invalid name"))
+        models.Project.quick(name="invalid name")
 
 
 def test_group_ensure_list():
-    g = models.Group(metadata=models.Metadata(name="test-group"), users=None)
+    g = models.Group.quick(name="test-group", users=None)
     assert g.users == []

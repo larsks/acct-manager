@@ -104,15 +104,20 @@ class Resource(BaseModel):
         name: str,
         namespace: Optional[str] = None,
         labels: Optional[dict[str, str]] = None,
+        annotations: Optional[dict[str, str]] = None,
         **kwargs: Any,
     ) -> Resource:
         """Convenience method for creating new resource"""
         metadata: Union[Metadata, NamespacedMetadata]
 
         if namespace:
-            metadata = NamespacedMetadata(name=name, namespace=namespace, labels=labels)
+            mdclass = NamespacedMetadata
         else:
-            metadata = Metadata(name=name, labels=labels)
+            mdclass = Metadata
+
+        metadata = mdclass(
+            name=name, namespace=namespace, labels=labels, annotations=annotations
+        )
 
         return cls(metadata=metadata, **kwargs)
 
@@ -183,6 +188,16 @@ class Identity(Resource):
     providerName: str
     providerUserName: str
     user: Optional[IdentityUser]
+
+    # pylint: disable=unused-argument,no-self-argument,no-self-use
+    @root_validator
+    def validate_name(cls, values: dict[Any, Any]) -> dict[Any, Any]:
+        """Verify that project name matches kubernetes naming requirements"""
+        if ":" not in values["metadata"].name:
+            raise ValueError(
+                "identity name must be in the format providerName:providerUserName"
+            )
+        return values
 
 
 class UserIdentityMapping(Resource):

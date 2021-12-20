@@ -13,22 +13,14 @@ def test_qualify_user_name(moc):
 
 
 def test_get_user(moc):
-    user = models.User(
-        metadata=models.Metadata(
-            name="test-user",
-        )
-    )
+    user = models.User.quick(name="test-user")
     moc.resources.users.get.return_value = user
     res = moc.get_user("test-user")
     assert res == user
 
 
 def test_user_exists(moc):
-    user = models.User(
-        metadata=models.Metadata(
-            name="test-user",
-        )
-    )
+    user = models.User.quick(name="test-user")
     moc.resources.users.get.return_value = user
     assert moc.user_exists("test-user")
 
@@ -39,10 +31,8 @@ def test_user_not_exists(moc):
 
 
 def test_create_user(moc):
-    user = models.User(
-        metadata=models.Metadata(
-            name="test-user",
-        ),
+    user = models.User.quick(
+        name="test-user",
         fullName="Test User",
     )
     moc.resources.users.get.return_value = user
@@ -54,10 +44,8 @@ def test_create_user(moc):
 
 
 def test_delete_user_exists(moc):
-    user = models.User(
-        metadata=models.Metadata(
-            name="test-user",
-        ),
+    user = models.User.quick(
+        name="test-user",
         fullName="Test User",
     )
     moc.resources.users.get.return_value = user
@@ -72,8 +60,8 @@ def test_delete_user_not_exists(moc):
 
 
 def test_get_identity(moc):
-    ident = models.Identity(
-        metadata=models.Metadata(name="fake-idp:test-user"),
+    ident = models.Identity.quick(
+        name="fake-idp:test-user",
         providerName="fake-idp",
         providerUserName="test-user",
     )
@@ -84,8 +72,8 @@ def test_get_identity(moc):
 
 
 def test_create_identity(moc):
-    ident = models.Identity(
-        metadata=models.Metadata(name="fake-idp:test-user"),
+    ident = models.Identity.quick(
+        name="fake-idp:test-user",
         providerName="fake-idp",
         providerUserName="test-user",
     )
@@ -96,8 +84,8 @@ def test_create_identity(moc):
 
 
 def test_identity_exists(moc):
-    ident = models.Identity(
-        metadata=models.Metadata(name="fake-idp:test-user"),
+    ident = models.Identity.quick(
+        name="fake-idp:test-user",
         providerName="fake-idp",
         providerUserName="test-user",
     )
@@ -112,8 +100,8 @@ def test_identity_exists_notfound(moc):
 
 
 def test_delete_identity(moc):
-    ident = models.Identity(
-        metadata=models.Metadata(name="fake-idp:test-user"),
+    ident = models.Identity.quick(
+        name="fake-idp:test-user",
         providerName="fake-idp",
         providerUserName="test-user",
     )

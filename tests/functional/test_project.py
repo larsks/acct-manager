@@ -27,9 +27,7 @@ def test_project_create_invalid(session):
 def test_project_delete_invalid(session, ocp_api, suffix):
     """Verify that we are unable to delete a project not created by the onboarding api"""
     name = f"target-project-{suffix}"
-    project = models.Project(
-        metadata=models.Metadata(name=name),
-    )
+    project = models.Project.quick(name=name)
     projects = ocp_api.resources.get(
         api_version="project.openshift.io/v1", kind="Project"
     )

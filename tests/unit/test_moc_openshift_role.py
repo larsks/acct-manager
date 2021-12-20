@@ -20,20 +20,14 @@ def test_check_role_invalid():
         moc_openshift.check_role_name("invalid")
 
 
-def test_user_has_role(moc):
-    project = models.Project(
-        metadata=models.Metadata(
-            name="test-project", labels={"massopen.cloud/project": "test-project"}
-        ),
-    )
-    group = models.Group(
-        metadata=models.Metadata(
-            name="test-project-admin", labels={"massopen.cloud/project": "test-project"}
-        ),
+def test_user_has_role(moc, a_project):
+    group = models.Group.quick(
+        name="test-project-admin",
+        labels={"massopen.cloud/project": "test-project"},
         users=["test-user"],
     )
 
-    moc.resources.projects.get.return_value = project
+    moc.resources.projects.get.return_value = a_project
     moc.resources.groups.get.return_value = group
     res = moc.user_has_role("test-user", "test-project", "admin")
     assert res

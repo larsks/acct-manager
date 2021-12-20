@@ -23,10 +23,9 @@ def create_configmaps(ocp_api, project, count, base=0):
     cmapi = ocp_api.resources.get(api_version="v1", kind="ConfigMap")
 
     for i in range(base, base + count):
-        cm = ConfigMap(
-            metadata=models.NamespacedMetadata(
-                name=f"example-cm-{i}", namespace=project
-            ),
+        cm = ConfigMap.quick(
+            name=f"example-cm-{i}",
+            namespace=project,
             data={"foo": "bar"},
         )
         cmapi.create(body=cm.dict(exclude_none=True))

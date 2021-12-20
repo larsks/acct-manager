@@ -128,15 +128,13 @@ class MocOpenShift:
         self.logger.info("create project %s", name)
         if self.project_exists(name):
             raise exc.ProjectExistsError(f"project {name} already exists")
-        project = models.Project(
-            metadata=models.Metadata(
-                name=name,
-                annotations={
-                    "openshift.io/display-name": display_name,
-                    "openshift.io/description": description,
-                    "openshift.io/requester": requester,
-                },
-            )
+        project = models.Project.quick(
+            name=name,
+            annotations={
+                "openshift.io/display-name": display_name,
+                "openshift.io/description": description,
+                "openshift.io/requester": requester,
+            },
         )
         add_common_labels(project, name)
 
@@ -194,11 +192,7 @@ class MocOpenShift:
         if self.group_exists(name):
             raise exc.GroupExistsError(f"group {name} already exists")
 
-        group = models.Group(
-            metadata=models.Metadata(
-                name=name,
-            ),
-        )
+        group = models.Group.quick(name=name)
         add_common_labels(group, project_name)
         self.resources.groups.create(body=group.dict(exclude_none=True))
         return group
@@ -281,10 +275,7 @@ class MocOpenShift:
     def create_user(self, name: str, full_name: Optional[str] = None) -> models.User:
         """Create a new user"""
         self.logger.info("create user %s", name)
-        user = models.User(
-            metadata=models.Metadata(name=name),
-            fullName=full_name if full_name else name,
-        )
+        user = models.User.quick(name=name, fullName=full_name)
 
         self.resources.users.create(body=user.dict(exclude_none=True))
         return user
@@ -303,11 +294,9 @@ class MocOpenShift:
         check_role_name(role)
         rb_name = make_group_name(project, role)
         # pylint: disable=invalid-name
-        rb = models.RoleBinding(
-            metadata=models.NamespacedMetadata(
-                namespace=project,
-                name=rb_name,
-            ),
+        rb = models.RoleBinding.quick(
+            namespace=project,
+            name=rb_name,
             roleRef=models.RoleRef(
                 apiGroup="rbac.authorization.k8s.io",
                 kind="ClusterRole",
@@ -380,11 +369,12 @@ class MocOpenShift:
         """
         self.logger.info("create identity for %s", name)
         ident_name = self.qualify_user_name(name)
-        ident = models.Identity(
-            metadata=models.Metadata(name=ident_name),
+        ident = models.Identity.quick(
+            name=ident_name,
             providerName=self.identity_provider,
             providerUserName=name,
         )
+
         self.resources.identities.create(body=ident.dict(exclude_none=True))
         return ident
 
@@ -408,8 +398,8 @@ class MocOpenShift:
         """Create a new UserIdentityMapping for the given user"""
         self.logger.info("create identity mapping for %s", name)
         ident_name = self.qualify_user_name(name)
-        mapping = models.UserIdentityMapping(
-            metadata=models.Metadata(name=ident_name),
+        mapping = models.UserIdentityMapping.quick(
+            name=ident_name,
             user=models.IdentityUser(name=name),
             identity=models.IdentityUser(name=ident_name),
         )
@@ -542,12 +532,10 @@ class MocOpenShift:
                 setattr(limitdef, cat, resolved)
                 all_limits.append(limitdef)
 
-        return models.LimitRange(
-            metadata=models.NamespacedMetadata(
-                name=f"{project}-limits",
-                namespace=project,
-                labels={"massopen.cloud/project": project},
-            ),
+        return models.LimitRange.quick(
+            name=f"{project}-limits",
+            namespace=project,
+            labels={"massopen.cloud/project": project},
             spec=models.LimitRangeSpec(
                 limits=all_limits,
             ),
@@ -576,12 +564,10 @@ class MocOpenShift:
                 values[name] = valspec.resolve(multiplier)
 
             resources.append(
-                models.ResourceQuota(
-                    metadata=models.NamespacedMetadata(
-                        name=quotaname,
-                        namespace=project,
-                        labels={"massopen.cloud/project": project},
-                    ),
+                models.ResourceQuota.quick(
+                    name=quotaname,
+                    namespace=project,
+                    labels={"massopen.cloud/project": project},
                     spec=models.ResourceQuotaSpec(
                         scopes=scopes,
                         hard=values,

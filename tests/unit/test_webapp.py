@@ -64,8 +64,8 @@ def test_create_user(client):
     with mock.patch(
         "acct_manager.moc_openshift.MocOpenShift.create_user_bundle"
     ) as fake_create_user_bundle:
-        fake_create_user_bundle.return_value = models.User(
-            metadata=models.Metadata(name="test-user"),
+        fake_create_user_bundle.return_value = models.User.quick(
+            name="test-user",
             fullName="Test User",
         )
         res = client.post(
@@ -99,8 +99,8 @@ def test_get_user(client):
     with mock.patch(
         "acct_manager.moc_openshift.MocOpenShift.get_user"
     ) as fake_get_user:
-        fake_get_user.return_value = models.User(
-            metadata=models.Metadata(name="test-user"),
+        fake_get_user.return_value = models.User.quick(
+            name="test-user",
         )
         res = client.get("/users/test-user")
         assert res.status_code == 200

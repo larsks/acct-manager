@@ -9,36 +9,26 @@ from acct_manager import moc_openshift
 from .conftest import fake_response
 
 project_bundle = [
-    models.Project(
-        metadata=models.Metadata(
-            name="test-project",
-            labels={"massopen.cloud/project": "test-project"},
-            annotations={"openshift.io/requester": "test-requester"},
-        )
+    models.Project.quick(
+        name="test-project",
+        labels={"massopen.cloud/project": "test-project"},
+        annotations={"openshift.io/requester": "test-requester"},
     ),
-    models.Group(
-        metadata=models.Metadata(
-            name="test-project-admin",
-            labels={"massopen.cloud/project": "test-project"},
-        )
+    models.Group.quick(
+        name="test-project-admin",
+        labels={"massopen.cloud/project": "test-project"},
     ),
-    models.Group(
-        metadata=models.Metadata(
-            name="test-project-member",
-            labels={"massopen.cloud/project": "test-project"},
-        )
+    models.Group.quick(
+        name="test-project-member",
+        labels={"massopen.cloud/project": "test-project"},
     ),
-    models.Group(
-        metadata=models.Metadata(
-            name="test-project-reader",
-            labels={"massopen.cloud/project": "test-project"},
-        )
+    models.Group.quick(
+        name="test-project-reader",
+        labels={"massopen.cloud/project": "test-project"},
     ),
-    models.RoleBinding(
-        metadata=models.NamespacedMetadata(
-            namespace="test-project",
-            name="test-project-admin",
-        ),
+    models.RoleBinding.quick(
+        namespace="test-project",
+        name="test-project-admin",
         roleRef=models.RoleRef(
             apiGroup="rbac.authorization.k8s.io",
             kind="ClusterRole",
@@ -52,11 +42,9 @@ project_bundle = [
             ),
         ],
     ),
-    models.RoleBinding(
-        metadata=models.NamespacedMetadata(
-            namespace="test-project",
-            name="test-project-member",
-        ),
+    models.RoleBinding.quick(
+        namespace="test-project",
+        name="test-project-member",
         roleRef=models.RoleRef(
             apiGroup="rbac.authorization.k8s.io",
             kind="ClusterRole",
@@ -70,11 +58,9 @@ project_bundle = [
             ),
         ],
     ),
-    models.RoleBinding(
-        metadata=models.NamespacedMetadata(
-            namespace="test-project",
-            name="test-project-reader",
-        ),
+    models.RoleBinding.quick(
+        namespace="test-project",
+        name="test-project-reader",
         roleRef=models.RoleRef(
             apiGroup="rbac.authorization.k8s.io",
             kind="ClusterRole",

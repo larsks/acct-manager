@@ -14,20 +14,18 @@ def fake_response(status_code):
 
 @pytest.fixture
 def a_project():
-    return models.Project(
-        metadata=models.Metadata(
-            name="test-project", labels={"massopen.cloud/project": "test-project"}
-        ),
+    return models.Project.quick(
+        name="test-project",
+        labels={"massopen.cloud/project": "test-project"},
+        annotations={"openshift.io/requester": "test-user"},
     )
 
 
 @pytest.fixture
 def a_group():
-    return models.Group(
-        metadata=models.Metadata(
-            name="test-project-admin",
-            labels={"massopen.cloud/project": "test-project"},
-        ),
+    return models.Group.quick(
+        name="test-project-admin",
+        labels={"massopen.cloud/project": "test-project"},
     )
 
 

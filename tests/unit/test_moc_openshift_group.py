@@ -9,10 +9,8 @@ from .conftest import fake_response
 
 
 def test_create_group(moc):
-    group = models.Group(
-        metadata=models.Metadata(
-            name="test-group", labels={"massopen.cloud/project": "test-project"}
-        )
+    group = models.Group.quick(
+        name="test-group", labels={"massopen.cloud/project": "test-project"}
     )
 
     moc.resources.groups.get.side_effect = exc.NotFoundError(fake_response(404))
@@ -24,10 +22,8 @@ def test_create_group(moc):
 
 
 def test_create_group_exists(moc):
-    group = models.Group(
-        metadata=models.Metadata(
-            name="test-group", labels={"massopen.cloud/project": "test-project"}
-        )
+    group = models.Group.quick(
+        name="test-group", labels={"massopen.cloud/project": "test-project"}
     )
     moc.resources.groups.get.return_value = group
 
@@ -36,10 +32,8 @@ def test_create_group_exists(moc):
 
 
 def test_delete_group_exists(moc):
-    group = models.Group(
-        metadata=models.Metadata(
-            name="test-group", labels={"massopen.cloud/project": "test-project"}
-        )
+    group = models.Group.quick(
+        name="test-group", labels={"massopen.cloud/project": "test-project"}
     )
     moc.resources.groups.get.return_value = group
 
@@ -55,7 +49,7 @@ def test_delete_group_not_exists(moc):
 
 
 def test_delete_group_invalid(moc):
-    group = models.Group(metadata=models.Metadata(name="test-group"))
+    group = models.Group.quick(name="test-group")
     moc.resources.groups.get.return_value = group
 
     with pytest.raises(exc.InvalidProjectError):
