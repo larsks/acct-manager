@@ -25,8 +25,8 @@ First, apply the manifests in `manifests/authentication`:
 oc apply -k manifests/authentication
 ```
 
-This will create add a second identity provider (IDP) named
-`onboarding` to your `OAuth` configuration. The IDP has three users
+This will add a second identity provider (IDP) named `onboarding` to
+your `OAuth` configuration. The IDP has three users
 (`test-user-{1,2,3}`), all of which have the password `secret`, and is
 configured in [`lookup` mode][lookup], which means that these users
 will be unable to authenticate until you have created the necessary
@@ -80,17 +80,16 @@ First, configure your `.env` file as in the previous section. You can
 then run the service with podman by doing something like this:
 
 ```
-podman run --rm -p 8080:8080 \
+podman run --rm -p 8080:8080 --name acct-manager --replace \
   -v $HOME/.kube:/root/.kube \
   -v $PWD/manifests/onboarding-api/base/quotas.json:/data/quotas.json \
   --env-file .env \
-  -e ACCT_MGR_QUOTA_FILE=/data/quotas.json \
   quay.io/larsks/moc-acct-manager:latest
 ```
 
 ### Running the code in OpenShift
 
-There are examples Kubernetes manifests in the
+There are example Kubernetes manifests in the
 `manifests/onboarding-api` directory that are designed to be applied
 using [Kustomize][]. To deploy this application into CRC:
 
