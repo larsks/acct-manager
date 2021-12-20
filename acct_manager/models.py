@@ -76,8 +76,8 @@ class Metadata(BaseModel):
     """Standard Kubernetes metadata"""
 
     name: str
-    labels: Optional[dict[str, Optional[str]]]
-    annotations: Optional[dict[str, Optional[str]]]
+    labels: Optional[TLabels]
+    annotations: Optional[TLabels]
 
     _remove_null_keys_labels = validator("labels", allow_reuse=True)(remove_null_keys)
     _remove_null_keys_annotations = validator("annotations", allow_reuse=True)(
@@ -91,6 +91,7 @@ class NamespacedMetadata(Metadata):
     namespace: str
 
 
+TLabels = dict[str, Optional[str]]
 TResource = TypeVar("TResource", bound="Resource")
 
 
@@ -106,8 +107,8 @@ class Resource(BaseModel):
         cls: Type[TResource],
         name: str,
         namespace: Optional[str] = None,
-        labels: Optional[dict[str, Optional[str]]] = None,
-        annotations: Optional[dict[str, Optional[str]]] = None,
+        labels: Optional[TLabels] = None,
+        annotations: Optional[TLabels] = None,
         **kwargs: Any,
     ) -> TResource:
         """Convenience method for creating new resource"""
