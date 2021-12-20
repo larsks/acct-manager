@@ -235,7 +235,7 @@ class Scope(str, enum.Enum):
 class ResourceQuotaSpec(BaseModel):
     """Spec for a v1 ResourceQuota"""
 
-    # pylint: disable=missing-class-docstring
+    # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config:
         use_enum_values = True
 

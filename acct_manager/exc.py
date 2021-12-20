@@ -37,8 +37,6 @@ class InvalidProjectError(AccountManagerError):
 class NoQuotasError(AccountManagerError):
     """Raised on attempt to create quotas with no quota configuration"""
 
-    pass
-
 
 class ObjectExistsError(AccountManagerError):
     """Parent class for conflict errors"""
