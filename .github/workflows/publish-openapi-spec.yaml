@@ -4,6 +4,8 @@
 name: Publish OpenAPI specification
 on:
   push:
+    branches:
+      - master
     paths:
       - spec/*
 
