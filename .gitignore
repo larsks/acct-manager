@@ -1,2 +1,4 @@
-Pipfile*
 .env
+Pipfile*
+*.py[co]
+__pycache__
