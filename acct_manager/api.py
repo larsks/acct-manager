@@ -32,15 +32,7 @@ TFunc = TypeVar("TFunc", bound=Callable[..., Any])
 def load_env_config(prefix: str) -> dict[str, str]:
     """Load configuration from environment variables"""
 
-    config = {}
-    for name, value in os.environ.items():
-        if not name.startswith(prefix):
-            continue
-
-        name = name[len(prefix) :]
-        config[name] = value
-
-    return config
+    return {k[len(prefix) :]: v for k, v in os.environ.items() if k.startswith(prefix)}
 
 
 def load_kube_config() -> None:
